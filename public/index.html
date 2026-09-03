@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Respawn Repairs — Inventory</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0f1117;
+      --surface:  #1a1d27;
+      --surface2: #21253a;
+      --border:   #2d3148;
+      --accent:   #7c6ff7;
+      --accent2:  #6a5fe0;
+      --text:     #e2e8f0;
+      --muted:    #64748b;
+      --subtle:   #94a3b8;
+      --green:    #22c55e;
+      --amber:    #f59e0b;
+      --red:      #ef4444;
+      --blue:     #3b82f6;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      height: 52px;
+      flex-shrink: 0;
+    }
+
+    header h1 { font-size: 1rem; font-weight: 700; color: var(--accent); flex: 1; }
+
+    #btn-add {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: 0.45rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    #btn-add:hover { background: var(--accent2); }
+
+    #btn-logout {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 7px;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    #btn-logout:hover { color: var(--text); border-color: var(--subtle); }
+
+    /* ── Stats bar ──────────────────────────────────────── */
+    #stats-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 0;
+      flex-shrink: 0;
+      overflow-x: auto;
+    }
+
+    .stat {
+      padding: 0.6rem 1.25rem;
+      border-right: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .stat-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .stat-value { font-size: 1rem; font-weight: 700; color: var(--text); margin-top: 1px; }
+    .stat-value.green { color: var(--green); }
+    .stat-value.amber { color: var(--amber); }
+    .stat-value.blue  { color: var(--blue); }
+
+    /* ── Filter tabs ────────────────────────────────────── */
+    #filter-bar {
+      padding: 0.6rem 1.25rem;
+      display: flex;
+      gap: 0.4rem;
+      flex-shrink: 0;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .filter-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--subtle);
+      border-radius: 20px;
+      padding: 0.3rem 0.85rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .filter-btn:hover { color: var(--text); }
+    .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* ── Main layout ────────────────────────────────────── */
+    #main {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── Item list ──────────────────────────────────────── */
+    #list-panel {
+      width: 340px;
+      flex-shrink: 0;
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+    }
+
+    .item-row {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      transition: background 0.1s;
+    }
+    .item-row:hover { background: var(--surface); }
+    .item-row.selected { background: var(--surface2); border-left: 3px solid var(--accent); }
+
+    .item-num {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--muted);
+      background: var(--surface2);
+      border-radius: 4px;
+      padding: 0.2rem 0.4rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .item-meta { flex: 1; min-width: 0; }
+    .item-title { font-weight: 600; font-size: 0.9rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item-sub   { font-size: 0.75rem; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .status-pill {
+      font-size: 0.68rem;
+      font-weight: 600;
+      border-radius: 12px;
+      padding: 0.2rem 0.55rem;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .pill-intake    { background: #1e293b; color: var(--subtle); }
+    .pill-diagnosis { background: #312e1a; color: #fbbf24; }
+    .pill-repair    { background: #1a2a3a; color: var(--blue); }
+    .pill-ready     { background: #1a2e1a; color: var(--green); }
+    .pill-listed    { background: #1e1a3a; color: var(--accent); }
+    .pill-sold      { background: #1a2e1a; color: var(--green); }
+    .pill-scrapped  { background: #2a1a1a; color: var(--red); }
+    .pill-unknown   { background: #1e293b; color: var(--muted); }
+
+    #empty-list {
+      padding: 2rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    /* ── Detail panel ───────────────────────────────────── */
+    #detail-panel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.25rem;
+    }
+
+    #no-selection {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--muted);
+      gap: 0.5rem;
+    }
+    #no-selection .big { font-size: 2rem; }
+
+    /* Detail header */
+    #detail-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    #detail-header h2 { font-size: 1.1rem; font-weight: 700; flex: 1; }
+    #detail-header .sub { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+
+    /* Action buttons */
+    #action-bar {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.25rem;
+    }
+
+    .action-btn {
+      border: none;
+      border-radius: 7px;
+      padding: 0.4rem 0.85rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .action-btn:hover { opacity: 0.85; }
+    .btn-blue    { background: #1d4ed8; color: #fff; }
+    .btn-amber   { background: #b45309; color: #fff; }
+    .btn-green   { background: #15803d; color: #fff; }
+    .btn-purple  { background: var(--accent); color: #fff; }
+    .btn-red     { background: #b91c1c; color: #fff; }
+    .btn-outline { background: none; border: 1px solid var(--border); color: var(--subtle); }
+    .btn-outline:hover { color: var(--text); }
+
+    /* Tabs */
+    #detail-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.25rem;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: -1px;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* Form fields */
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+    .field-grid.two-col { grid-template-columns: 1fr 1fr; }
+
+    .field { display: flex; flex-direction: column; gap: 0.3rem; }
+    .field.span2 { grid-column: span 2; }
+    .field.span-all { grid-column: 1 / -1; }
+
+    .field label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .field input, .field select, .field textarea {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text);
+      padding: 0.5rem 0.65rem;
+      font-size: 0.88rem;
+      outline: none;
+      font-family: inherit;
+      width: 100%;
+      transition: border-color 0.15s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: var(--accent);
+    }
+    .field textarea { resize: vertical; min-height: 80px; }
+
+    .field select option { background: var(--surface2); }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.25rem;
+    }
+    .checkbox-row input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--accent); }
+    .checkbox-row label { font-size: 0.85rem; color: var(--text); }
+
+    .field-section {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin: 1.25rem 0 0.75rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* P&L display */
+    .pl-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .pl-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+    }
+    .pl-card .label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .pl-card .value { font-size: 1.1rem; font-weight: 700; margin-top: 2px; }
+    .pl-card .value.green { color: var(--green); }
+    .pl-card .value.red   { color: var(--red); }
+    .pl-card .value.amber { color: var(--amber); }
+
+    /* Save bar */
+    #save-bar {
+      display: none;
+      position: sticky;
+      bottom: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+    #save-bar.hidden { display: none !important; }
+
+    #btn-save {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: 0.5rem 1.25rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    #btn-save:hover { background: var(--accent2); }
+    #btn-discard {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 7px;
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    #save-status { font-size: 0.8rem; color: var(--green); margin-left: auto; opacity: 0; transition: opacity 0.3s; }
+
+    /* ── Modal ──────────────────────────────────────────── */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-backdrop.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 1.5rem;
+    }
+
+    .modal h2 { font-size: 1rem; font-weight: 700; margin-bottom: 1.25rem; }
+
+    .modal .field-grid { grid-template-columns: 1fr 1fr; }
+
+    .modal-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      margin-top: 1.5rem;
+    }
+
+    .btn-cancel {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--subtle);
+      border-radius: 7px;
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: 0.5rem 1.25rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-primary:hover { background: var(--accent2); }
+
+    /* ── Sold modal ─────────────────────────────────────── */
+    #sold-modal .field-grid { grid-template-columns: 1fr; }
+
+    /* ── Spinner ────────────────────────────────────────── */
+    #loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--muted);
+    }
+
+    /* ── Delete confirm ─────────────────────────────────── */
+    #confirm-modal p { color: var(--subtle); font-size: 0.9rem; margin-bottom: 1.25rem; }
+
+    @media (max-width: 640px) {
+      #list-panel { width: 100%; border-right: none; display: block; }
+      #detail-panel { display: none; }
+      #list-panel.hidden { display: none; }
+      #detail-panel.mobile-show { display: block; }
+      .field-grid { grid-template-columns: 1fr !important; }
+      .field.span2, .field.span-all { grid-column: 1; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────── -->
+<header>
+  <h1>Respawn Repairs</h1>
+  <button id="btn-add">+ Add Item</button>
+  <button id="btn-logout" onclick="location='/logout'">Logout</button>
+</header>
+
+<!-- ── Stats ───────────────────────────────────────────── -->
+<div id="stats-bar">
+  <div class="stat">
+    <div class="stat-label">Total Items</div>
+    <div class="stat-value blue" id="s-total">—</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">In Progress</div>
+    <div class="stat-value amber" id="s-wip">—</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Ready to Sell</div>
+    <div class="stat-value green" id="s-ready">—</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Sold</div>
+    <div class="stat-value" id="s-sold">—</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Net Profit</div>
+    <div class="stat-value green" id="s-profit">—</div>
+  </div>
+</div>
+
+<!-- ── Filter tabs ─────────────────────────────────────── -->
+<div id="filter-bar">
+  <button class="filter-btn active" data-status="all">All</button>
+  <button class="filter-btn" data-status="Intake">Intake</button>
+  <button class="filter-btn" data-status="Diagnosis">Diagnosis</button>
+  <button class="filter-btn" data-status="In Repair">In Repair</button>
+  <button class="filter-btn" data-status="Ready to Sell">Ready</button>
+  <button class="filter-btn" data-status="Listed">Listed</button>
+  <button class="filter-btn" data-status="Sold">Sold</button>
+  <button class="filter-btn" data-status="Scrapped">Scrapped</button>
+</div>
+
+<!-- ── Main ────────────────────────────────────────────── -->
+<div id="main">
+  <div id="list-panel">
+    <div id="loading">Loading…</div>
+    <div id="item-list" style="display:none"></div>
+    <div id="empty-list" style="display:none">No items match this filter.</div>
+  </div>
+
+  <div id="detail-panel">
+    <div id="no-selection">
+      <div class="big">🎮</div>
+      <div>Select an item to view details</div>
+    </div>
+
+    <div id="item-detail" style="display:none">
+      <!-- Header -->
+      <div id="detail-header">
+        <div style="flex:1">
+          <h2 id="d-title">—</h2>
+          <div class="sub" id="d-sub">—</div>
+        </div>
+        <span class="status-pill" id="d-status-pill">—</span>
+      </div>
+
+      <!-- Action buttons -->
+      <div id="action-bar"></div>
+
+      <!-- Tabs -->
+      <div id="detail-tabs">
+        <button class="tab-btn active" data-tab="details">Details</button>
+        <button class="tab-btn" data-tab="sale">Sale Info</button>
+        <button class="tab-btn" data-tab="pl">P&amp;L</button>
+      </div>
+
+      <!-- Tab: Details -->
+      <div class="tab-pane active" id="tab-details">
+        <div class="field-grid">
+          <div class="field">
+            <label>Date In</label>
+            <input type="date" data-field="dateIn">
+          </div>
+          <div class="field">
+            <label>Status</label>
+            <select data-field="status">
+              <option>Intake</option>
+              <option>Diagnosis</option>
+              <option>In Repair</option>
+              <option>Ready to Sell</option>
+              <option>Listed</option>
+              <option>Sold</option>
+              <option>Scrapped</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Category</label>
+            <select data-field="category">
+              <option value="">—</option>
+              <option>Console</option>
+              <option>Controller</option>
+              <option>Handheld</option>
+              <option>Accessory</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Brand</label>
+            <select data-field="brand">
+              <option value="">—</option>
+              <option>Sony</option>
+              <option>Microsoft</option>
+              <option>Nintendo</option>
+              <option>Sega</option>
+              <option>Atari</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Colour</label>
+            <input type="text" data-field="colour" placeholder="e.g. Black">
+          </div>
+          <div class="field">
+            <label>Condition</label>
+            <select data-field="condition">
+              <option value="">—</option>
+              <option>Poor</option>
+              <option>Fair</option>
+              <option>Good</option>
+              <option>Very Good</option>
+              <option>Excellent</option>
+            </select>
+          </div>
+          <div class="field span-all">
+            <label>Fault Description</label>
+            <textarea data-field="faultDesc" rows="3"></textarea>
+          </div>
+          <div class="field span-all">
+            <label>Repair Notes</label>
+            <textarea data-field="repairNotes" rows="3"></textarea>
+          </div>
+          <div class="field">
+            <label>Hours Spent</label>
+            <input type="number" data-field="hoursSpent" min="0" step="0.25">
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Sale Info -->
+      <div class="tab-pane" id="tab-sale">
+        <div class="field-section">Listing</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Sale Venue</label>
+            <select data-field="saleVenue">
+              <option value="">—</option>
+              <option>eBay</option>
+              <option>CEX</option>
+              <option>Vinted</option>
+              <option>Facebook</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>eBay Item #</label>
+            <input type="text" data-field="ebayItemNum">
+          </div>
+        </div>
+
+        <div class="field-section">Listed On</div>
+        <div style="display:flex; flex-wrap:wrap; gap:1rem; margin-bottom:1rem">
+          <div class="checkbox-row"><input type="checkbox" id="chk-ebay" data-field="listedEbay"><label for="chk-ebay">eBay</label></div>
+          <div class="checkbox-row"><input type="checkbox" id="chk-vinted" data-field="listedVinted"><label for="chk-vinted">Vinted</label></div>
+          <div class="checkbox-row"><input type="checkbox" id="chk-fb" data-field="listedFacebook"><label for="chk-fb">Facebook</label></div>
+          <div class="checkbox-row"><input type="checkbox" id="chk-cex" data-field="listedCEX"><label for="chk-cex">CEX</label></div>
+          <div class="checkbox-row"><input type="checkbox" id="chk-other" data-field="listedOther"><label for="chk-other">Other</label></div>
+        </div>
+
+        <div class="field-section">Sale</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Sale Date</label>
+            <input type="date" data-field="saleDate">
+          </div>
+          <div class="field">
+            <label>Sale Price (£)</label>
+            <input type="number" data-field="salePrice" min="0" step="0.01">
+          </div>
+          <div class="field">
+            <label>Fees + Postage Out (£)</label>
+            <input type="number" data-field="feesPost" min="0" step="0.01">
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: P&L -->
+      <div class="tab-pane" id="tab-pl">
+        <div class="field-section">Costs</div>
+        <div class="field-grid two-col">
+          <div class="field">
+            <label>Buy Price (£)</label>
+            <input type="number" data-field="buyPrice" min="0" step="0.01">
+          </div>
+          <div class="field">
+            <label>Postage In (£)</label>
+            <input type="number" data-field="postageIn" min="0" step="0.01">
+          </div>
+          <div class="field">
+            <label>Parts Cost (£)</label>
+            <input type="number" data-field="partsCost" min="0" step="0.01">
+          </div>
+          <div class="field">
+            <label>Est. Sale Price (£)</label>
+            <input type="number" data-field="estSalePrice" min="0" step="0.01">
+          </div>
+        </div>
+
+        <div class="field-section">Summary</div>
+        <div class="pl-grid">
+          <div class="pl-card">
+            <div class="label">Total Cost</div>
+            <div class="value" id="pl-cost">—</div>
+          </div>
+          <div class="pl-card">
+            <div class="label">Est. Profit</div>
+            <div class="value" id="pl-est">—</div>
+          </div>
+          <div class="pl-card">
+            <div class="label">Net Profit</div>
+            <div class="value" id="pl-net">—</div>
+          </div>
+          <div class="pl-card">
+            <div class="label">Margin</div>
+            <div class="value" id="pl-margin">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Save bar -->
+      <div id="save-bar" class="hidden">
+        <button id="btn-save">Save Changes</button>
+        <button id="btn-discard">Discard</button>
+        <span id="save-status">Saved ✓</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Add New Modal ────────────────────────────────────── -->
+<div class="modal-backdrop" id="add-modal">
+  <div class="modal">
+    <h2>Add New Item</h2>
+    <div class="field-grid">
+      <div class="field">
+        <label>Category *</label>
+        <select id="new-category">
+          <option value="">Select…</option>
+          <option>Console</option>
+          <option>Controller</option>
+          <option>Handheld</option>
+          <option>Accessory</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Brand *</label>
+        <select id="new-brand">
+          <option value="">Select…</option>
+          <option>Sony</option>
+          <option>Microsoft</option>
+          <option>Nintendo</option>
+          <option>Sega</option>
+          <option>Atari</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Colour</label>
+        <input type="text" id="new-colour" placeholder="e.g. Black">
+      </div>
+      <div class="field">
+        <label>Condition</label>
+        <select id="new-condition">
+          <option value="">—</option>
+          <option>Poor</option>
+          <option>Fair</option>
+          <option>Good</option>
+          <option>Very Good</option>
+          <option>Excellent</option>
+        </select>
+      </div>
+      <div class="field span-all">
+        <label>Fault Description</label>
+        <textarea id="new-fault" rows="3" placeholder="Describe the fault…"></textarea>
+      </div>
+      <div class="field">
+        <label>Buy Price (£)</label>
+        <input type="number" id="new-buyprice" min="0" step="0.01" placeholder="0.00">
+      </div>
+      <div class="field">
+        <label>Postage In (£)</label>
+        <input type="number" id="new-postagein" min="0" step="0.01" placeholder="0.00">
+      </div>
+      <div class="field">
+        <label>Date In</label>
+        <input type="date" id="new-datein">
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="new-status">
+          <option>Intake</option>
+          <option>Diagnosis</option>
+          <option>In Repair</option>
+          <option>Ready to Sell</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="add-cancel">Cancel</button>
+      <button class="btn-primary" id="add-confirm">Add Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Sold Modal ───────────────────────────────────────── -->
+<div class="modal-backdrop" id="sold-modal">
+  <div class="modal" style="max-width:380px">
+    <h2>Mark as Sold</h2>
+    <div class="field-grid" style="grid-template-columns:1fr">
+      <div class="field">
+        <label>Sale Date</label>
+        <input type="date" id="sold-date">
+      </div>
+      <div class="field">
+        <label>Sale Price (£) *</label>
+        <input type="number" id="sold-price" min="0" step="0.01" placeholder="0.00">
+      </div>
+      <div class="field">
+        <label>Fees + Postage Out (£)</label>
+        <input type="number" id="sold-fees" min="0" step="0.01" placeholder="0.00">
+      </div>
+      <div class="field">
+        <label>Sale Venue</label>
+        <select id="sold-venue">
+          <option value="">—</option>
+          <option>eBay</option>
+          <option>CEX</option>
+          <option>Vinted</option>
+          <option>Facebook</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="sold-cancel">Cancel</button>
+      <button class="btn-primary" id="sold-confirm">Mark Sold</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Delete Confirm Modal ─────────────────────────────── -->
+<div class="modal-backdrop" id="confirm-modal">
+  <div class="modal" id="confirm-modal" style="max-width:360px">
+    <h2>Delete Item?</h2>
+    <p id="confirm-msg">This cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="confirm-cancel">Cancel</button>
+      <button class="action-btn btn-red" id="confirm-ok">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ───────────────────────────────────────────────
+let items = [];
+let currentFilter = 'all';
+let selectedId = null;
+let pendingChanges = {};
+let confirmCallback = null;
+
+// ── API helpers ─────────────────────────────────────────
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(path, opts);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+// ── Load data ───────────────────────────────────────────
+async function loadItems() {
+  items = await api('GET', '/api/items');
+  renderList();
+  updateStats();
+}
+
+// ── Stats ───────────────────────────────────────────────
+function updateStats() {
+  const wip = ['Intake','Diagnosis','In Repair'];
+  document.getElementById('s-total').textContent  = items.length;
+  document.getElementById('s-wip').textContent    = items.filter(i => wip.includes(i.status)).length;
+  document.getElementById('s-ready').textContent  = items.filter(i => i.status === 'Ready to Sell' || i.status === 'Listed').length;
+  document.getElementById('s-sold').textContent   = items.filter(i => i.status === 'Sold').length;
+  const profit = items.filter(i => i.status === 'Sold').reduce((s, i) => s + (i.netProfit || 0), 0);
+  document.getElementById('s-profit').textContent = '£' + profit.toFixed(2);
+}
+
+// ── Status pill ─────────────────────────────────────────
+const STATUS_CLASS = {
+  'Intake': 'pill-intake', 'Diagnosis': 'pill-diagnosis', 'In Repair': 'pill-repair',
+  'Ready to Sell': 'pill-ready', 'Listed': 'pill-listed', 'Sold': 'pill-sold',
+  'Scrapped': 'pill-scrapped',
+};
+
+function pillClass(status) { return STATUS_CLASS[status] || 'pill-unknown'; }
+
+function itemTitle(item) {
+  const parts = [item.brand, item.category, item.colour].filter(Boolean);
+  return parts.join(' ') || 'Unknown Item';
+}
+
+// ── Item list ───────────────────────────────────────────
+function renderList() {
+  const list = document.getElementById('item-list');
+  const empty = document.getElementById('empty-list');
+  const loading = document.getElementById('loading');
+
+  loading.style.display = 'none';
+
+  const filtered = currentFilter === 'all'
+    ? items
+    : items.filter(i => i.status === currentFilter);
+
+  if (!filtered.length) {
+    list.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+
+  list.style.display = 'block';
+  empty.style.display = 'none';
+
+  list.innerHTML = filtered.map(item => `
+    <div class="item-row ${item.id === selectedId ? 'selected' : ''}" data-id="${item.id}">
+      <span class="item-num">#${String(item.num).padStart(3,'0')}</span>
+      <div class="item-meta">
+        <div class="item-title">${itemTitle(item)}</div>
+        <div class="item-sub">${item.faultDesc || '—'}</div>
+      </div>
+      <span class="status-pill ${pillClass(item.status)}">${item.status || '—'}</span>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.item-row').forEach(row => {
+    row.addEventListener('click', () => selectItem(row.dataset.id));
+  });
+}
+
+// ── Select item ─────────────────────────────────────────
+function selectItem(id) {
+  if (id === selectedId) return;
+  if (Object.keys(pendingChanges).length > 0) {
+    if (!confirm('Discard unsaved changes?')) return;
+  }
+  pendingChanges = {};
+  hideSaveBar();
+  selectedId = id;
+  renderList();
+  renderDetail();
+}
+
+// ── Detail panel ─────────────────────────────────────────
+function renderDetail() {
+  const item = items.find(i => i.id === selectedId);
+  document.getElementById('no-selection').style.display  = 'none';
+  document.getElementById('item-detail').style.display   = 'block';
+
+  if (!item) return;
+
+  document.getElementById('d-title').textContent = itemTitle(item);
+  document.getElementById('d-sub').textContent   = `#${String(item.num).padStart(3,'0')} · In: ${item.dateIn || '—'}`;
+
+  const pill = document.getElementById('d-status-pill');
+  pill.textContent = item.status || '—';
+  pill.className = 'status-pill ' + pillClass(item.status);
+
+  renderActionBar(item);
+  populateFields(item);
+  updatePLDisplay(item);
+}
+
+// ── Action bar ──────────────────────────────────────────
+function renderActionBar(item) {
+  const bar = document.getElementById('action-bar');
+  const s = item.status;
+
+  const btns = [];
+  if (s === 'Intake')        btns.push(['Diagnosis', 'btn-amber', () => quickStatus('Diagnosis')]);
+  if (s === 'Diagnosis')     btns.push(['Start Repair', 'btn-blue', () => quickStatus('In Repair')]);
+  if (s === 'In Repair')     btns.push(['Mark Ready', 'btn-green', () => quickStatus('Ready to Sell')]);
+  if (s === 'Ready to Sell') btns.push(['Mark Listed', 'btn-purple', () => quickStatus('Listed')]);
+  if (s !== 'Sold' && s !== 'Scrapped') {
+    btns.push(['Sold', 'btn-green', () => openSoldModal()]);
+  }
+  if (s !== 'Scrapped' && s !== 'Sold') {
+    btns.push(['Scrapped', 'btn-red', () => quickStatus('Scrapped')]);
+  }
+  btns.push(['Delete', 'btn-outline', () => openConfirmDelete()]);
+
+  bar.innerHTML = btns.map(([label, cls, _], i) =>
+    `<button class="action-btn ${cls}" data-action="${i}">${label}</button>`
+  ).join('');
+
+  bar.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', btns[+btn.dataset.action][2]);
+  });
+}
+
+async function quickStatus(status) {
+  const item = items.find(i => i.id === selectedId);
+  if (!item) return;
+  const updated = await api('PUT', '/api/items/' + selectedId, { status });
+  mergeItem(updated);
+  renderList();
+  renderDetail();
+  updateStats();
+}
+
+// ── Populate fields ──────────────────────────────────────
+function populateFields(item) {
+  document.querySelectorAll('#item-detail [data-field]').forEach(el => {
+    const field = el.dataset.field;
+    const val = item[field];
+    if (el.type === 'checkbox') {
+      el.checked = !!val;
+    } else {
+      el.value = val ?? '';
+    }
+  });
+}
+
+// ── Field change tracking ────────────────────────────────
+document.getElementById('item-detail').addEventListener('change', e => {
+  const el = e.target;
+  const field = el.dataset.field;
+  if (!field || !selectedId) return;
+  pendingChanges[field] = el.type === 'checkbox' ? el.checked : (el.value || null);
+  showSaveBar();
+
+  // Live P&L preview
+  if (['buyPrice','postageIn','partsCost','estSalePrice','salePrice','feesPost'].includes(field)) {
+    const item = { ...items.find(i => i.id === selectedId), ...pendingChanges };
+    updatePLDisplay(item);
+  }
+});
+
+// ── Save bar ─────────────────────────────────────────────
+function showSaveBar() { document.getElementById('save-bar').classList.remove('hidden'); }
+function hideSaveBar()  { document.getElementById('save-bar').classList.add('hidden'); }
+
+document.getElementById('btn-save').addEventListener('click', async () => {
+  if (!selectedId || !Object.keys(pendingChanges).length) return;
+  const updated = await api('PUT', '/api/items/' + selectedId, pendingChanges);
+  pendingChanges = {};
+  mergeItem(updated);
+  hideSaveBar();
+  renderList();
+  renderDetail();
+  updateStats();
+  const status = document.getElementById('save-status');
+  status.style.opacity = 1;
+  setTimeout(() => status.style.opacity = 0, 2000);
+});
+
+document.getElementById('btn-discard').addEventListener('click', () => {
+  pendingChanges = {};
+  hideSaveBar();
+  renderDetail();
+});
+
+// ── P&L display ──────────────────────────────────────────
+function updatePLDisplay(item) {
+  const cost = (+item.buyPrice || 0) + (+item.postageIn || 0) + (+item.partsCost || 0);
+  const estProfit = (+item.estSalePrice || 0) - cost;
+  const netProfit = (+item.salePrice || 0) - (+item.feesPost || 0) - cost;
+  const margin = item.salePrice ? ((netProfit / +item.salePrice) * 100) : 0;
+
+  const fmt = (n) => (n >= 0 ? '£' : '-£') + Math.abs(n).toFixed(2);
+  const col = (n) => n >= 0 ? 'green' : 'red';
+
+  set('pl-cost',   '£' + cost.toFixed(2), '');
+  set('pl-est',    fmt(estProfit), col(estProfit));
+  set('pl-net',    fmt(netProfit), col(netProfit));
+  set('pl-margin', margin.toFixed(1) + '%', col(margin));
+
+  function set(id, text, cls) {
+    const el = document.getElementById(id);
+    el.textContent = text;
+    el.className = 'value' + (cls ? ' ' + cls : '');
+  }
+}
+
+// ── Tab switching ─────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ── Filter tabs ───────────────────────────────────────────
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.status;
+    renderList();
+  });
+});
+
+// ── Add item modal ────────────────────────────────────────
+document.getElementById('btn-add').addEventListener('click', () => {
+  // Set today's date
+  document.getElementById('new-datein').value = new Date().toISOString().split('T')[0];
+  openModal('add-modal');
+});
+
+document.getElementById('add-cancel').addEventListener('click', () => closeModal('add-modal'));
+
+document.getElementById('add-confirm').addEventListener('click', async () => {
+  const category = document.getElementById('new-category').value;
+  const brand    = document.getElementById('new-brand').value;
+  if (!category || !brand) { alert('Category and Brand are required.'); return; }
+
+  const data = {
+    category,
+    brand,
+    colour:    document.getElementById('new-colour').value || null,
+    condition: document.getElementById('new-condition').value || null,
+    faultDesc: document.getElementById('new-fault').value || null,
+    buyPrice:  parseFloat(document.getElementById('new-buyprice').value) || 0,
+    postageIn: parseFloat(document.getElementById('new-postagein').value) || 0,
+    dateIn:    document.getElementById('new-datein').value || null,
+    status:    document.getElementById('new-status').value,
+  };
+
+  const item = await api('POST', '/api/items', data);
+  items.push(item);
+  closeModal('add-modal');
+  renderList();
+  updateStats();
+  selectItem(item.id);
+
+  // Reset form
+  ['new-category','new-brand','new-colour','new-condition','new-fault','new-buyprice','new-postagein'].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = el.tagName === 'SELECT' ? '' : '';
+  });
+  document.getElementById('new-status').value = 'Intake';
+});
+
+// ── Sold modal ────────────────────────────────────────────
+function openSoldModal() {
+  document.getElementById('sold-date').value  = new Date().toISOString().split('T')[0];
+  document.getElementById('sold-price').value = '';
+  document.getElementById('sold-fees').value  = '';
+  document.getElementById('sold-venue').value = '';
+  openModal('sold-modal');
+}
+
+document.getElementById('sold-cancel').addEventListener('click', () => closeModal('sold-modal'));
+
+document.getElementById('sold-confirm').addEventListener('click', async () => {
+  const price = parseFloat(document.getElementById('sold-price').value);
+  if (!price) { alert('Sale price is required.'); return; }
+
+  const item = items.find(i => i.id === selectedId);
+  const cost = (+item.buyPrice||0) + (+item.postageIn||0) + (+item.partsCost||0);
+  const fees = parseFloat(document.getElementById('sold-fees').value) || 0;
+  const netProfit = price - fees - cost;
+  const margin    = price ? (netProfit / price) * 100 : 0;
+
+  const data = {
+    status:    'Sold',
+    saleDate:  document.getElementById('sold-date').value,
+    salePrice: price,
+    feesPost:  fees,
+    saleVenue: document.getElementById('sold-venue').value || null,
+    netProfit: +netProfit.toFixed(2),
+    margin:    +margin.toFixed(2),
+  };
+
+  const updated = await api('PUT', '/api/items/' + selectedId, data);
+  mergeItem(updated);
+  closeModal('sold-modal');
+  renderList();
+  renderDetail();
+  updateStats();
+});
+
+// ── Delete ────────────────────────────────────────────────
+function openConfirmDelete() {
+  const item = items.find(i => i.id === selectedId);
+  document.getElementById('confirm-msg').textContent =
+    `Delete "${itemTitle(item)}" (#${String(item.num).padStart(3,'0')})? This cannot be undone.`;
+  confirmCallback = async () => {
+    await api('DELETE', '/api/items/' + selectedId);
+    items = items.filter(i => i.id !== selectedId);
+    selectedId = null;
+    pendingChanges = {};
+    hideSaveBar();
+    document.getElementById('no-selection').style.display = 'flex';
+    document.getElementById('item-detail').style.display  = 'none';
+    renderList();
+    updateStats();
+  };
+  openModal('confirm-modal');
+}
+
+document.getElementById('confirm-cancel').addEventListener('click', () => {
+  confirmCallback = null;
+  closeModal('confirm-modal');
+});
+
+document.getElementById('confirm-ok').addEventListener('click', async () => {
+  if (confirmCallback) await confirmCallback();
+  confirmCallback = null;
+  closeModal('confirm-modal');
+});
+
+// ── Modal helpers ─────────────────────────────────────────
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-backdrop').forEach(m => {
+  m.addEventListener('click', e => {
+    if (e.target === m) closeModal(m.id);
+  });
+});
+
+// ── Item merge helper ─────────────────────────────────────
+function mergeItem(updated) {
+  const idx = items.findIndex(i => i.id === updated.id);
+  if (idx !== -1) items[idx] = updated;
+}
+
+// ── Init ──────────────────────────────────────────────────
+loadItems();
+</script>
+</body>
+</html>
