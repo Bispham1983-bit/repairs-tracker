@@ -709,6 +709,29 @@
         </div>
       </div>
 
+      <!-- Quick P&L strip -->
+      <div style="border-top:1px solid #333;margin-top:4px;padding:12px 0 4px">
+        <div class="field-section" style="margin-top:0">Quick P&amp;L</div>
+        <div class="field-grid two-col">
+          <div class="field">
+            <label>Paid (£)</label>
+            <input type="number" data-field="buyPrice" min="0" step="0.01" placeholder="0.00">
+          </div>
+          <div class="field">
+            <label>Parts Cost (£)</label>
+            <input type="number" data-field="partsCost" min="0" step="0.01" placeholder="0.00">
+          </div>
+          <div class="field">
+            <label>Est. Sale Price (£)</label>
+            <input type="number" data-field="estSalePrice" min="0" step="0.01" placeholder="0.00">
+          </div>
+          <div class="field" style="display:flex;flex-direction:column;justify-content:flex-end">
+            <label>Est. Profit</label>
+            <div id="quick-profit" style="font-size:1.1rem;font-weight:700;padding:6px 0">—</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Tab: Sale Info -->
       <div class="tab-pane" id="tab-sale">
         <div class="field-section">Listing</div>
@@ -1340,7 +1363,7 @@ const STATUS_CLASS = {
 function pillClass(status) { return STATUS_CLASS[status] || 'pill-unknown'; }
 
 function itemTitle(item) {
-  const parts = [item.model || item.brand, item.category, item.colour].filter(Boolean);
+  const parts = [item.model || item.brand, item.model ? null : item.category, item.colour].filter(Boolean);
   return parts.join(' ') || 'Unknown Item';
 }
 
@@ -1448,6 +1471,7 @@ function renderDetail() {
   renderActionBar(item);
   populateFields(item);
   updatePLDisplay(item);
+  updateQuickProfit(item);
 }
 
 // ── Action bar ──────────────────────────────────────────
@@ -1530,6 +1554,7 @@ document.getElementById('item-detail').addEventListener('change', e => {
   if (['buyPrice','postageIn','partsCost','estSalePrice','salePrice','feesPost'].includes(field)) {
     const item = { ...items.find(i => i.id === selectedId), ...pendingChanges };
     updatePLDisplay(item);
+    updateQuickProfit(item);
   }
 });
 
@@ -1558,6 +1583,17 @@ document.getElementById('btn-discard').addEventListener('click', () => {
 });
 
 // ── P&L display ──────────────────────────────────────────
+function updateQuickProfit(item) {
+  const el = document.getElementById('quick-profit');
+  if (!el) return;
+  const cost   = (+item.buyPrice || 0) + (+item.postageIn || 0) + (+item.partsCost || 0);
+  const estSale = +item.estSalePrice || 0;
+  if (!cost && !estSale) { el.textContent = '—'; el.style.color = ''; return; }
+  const profit = estSale - cost;
+  el.textContent = (profit >= 0 ? '+' : '') + '£' + profit.toFixed(2);
+  el.style.color = profit >= 0 ? 'var(--green)' : 'var(--red)';
+}
+
 function updatePLDisplay(item) {
   const cost = (+item.buyPrice || 0) + (+item.postageIn || 0) + (+item.partsCost || 0);
   const estProfit = (+item.estSalePrice || 0) - cost;
