@@ -1295,7 +1295,7 @@ const STATUS_CLASS = {
 function pillClass(status) { return STATUS_CLASS[status] || 'pill-unknown'; }
 
 function itemTitle(item) {
-  const parts = [item.brand, item.category, item.colour].filter(Boolean);
+  const parts = [item.model || item.brand, item.category, item.colour].filter(Boolean);
   return parts.join(' ') || 'Unknown Item';
 }
 
