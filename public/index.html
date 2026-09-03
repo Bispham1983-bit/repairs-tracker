@@ -766,6 +766,10 @@
             <label>Est. Sale Price (£)</label>
             <input type="number" data-field="estSalePrice" min="0" step="0.01">
           </div>
+          <div class="field">
+            <label>Sale Price Achieved (£)</label>
+            <input type="number" data-field="salePrice" min="0" step="0.01">
+          </div>
         </div>
 
         <div class="field-section">Summary</div>
@@ -775,8 +779,8 @@
             <div class="value" id="pl-cost">—</div>
           </div>
           <div class="pl-card">
-            <div class="label">Est. Profit</div>
-            <div class="value" id="pl-est">—</div>
+            <div class="label">Sale Price</div>
+            <div class="value" id="pl-sale">—</div>
           </div>
           <div class="pl-card">
             <div class="label">Net Profit</div>
@@ -1450,7 +1454,7 @@ function updatePLDisplay(item) {
   const col = (n) => n >= 0 ? 'green' : 'red';
 
   set('pl-cost',   '£' + cost.toFixed(2), '');
-  set('pl-est',    fmt(estProfit), col(estProfit));
+  set('pl-sale',   item.salePrice ? '£' + (+item.salePrice).toFixed(2) : '—', item.salePrice ? 'green' : '');
   set('pl-net',    fmt(netProfit), col(netProfit));
   set('pl-margin', margin.toFixed(1) + '%', col(margin));
 
