@@ -120,9 +120,9 @@ module.exports = {
   },
 
   consumeNextNum() {
-    const n = this.getNextNum();
-    db.prepare("UPDATE meta SET value=? WHERE key='nextNum'").run(String(n + 1));
-    return n;
+    // Always use MAX(num)+1 so deletions don't leave gaps in the counter
+    const row = db.prepare("SELECT COALESCE(MAX(num), 0) + 1 AS next FROM items").get();
+    return row.next;
   },
 
   // Used by seed script
