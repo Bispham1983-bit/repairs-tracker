@@ -36,6 +36,7 @@ db.exec(`
     feesPost    REAL    DEFAULT 0,
     netProfit   REAL    DEFAULT 0,
     margin      REAL    DEFAULT 0,
+    recommendedVenue TEXT    DEFAULT '',
     createdAt   TEXT    DEFAULT (datetime('now')),
     updatedAt   TEXT    DEFAULT (datetime('now'))
   );
@@ -45,6 +46,9 @@ db.exec(`
     value TEXT
   );
 `);
+
+// Add new columns to existing DBs safely
+try { db.exec("ALTER TABLE items ADD COLUMN recommendedVenue TEXT DEFAULT ''"); } catch(e) {}
 
 // Initialise counter
 if (!db.prepare("SELECT value FROM meta WHERE key='nextNum'").get()) {
@@ -73,7 +77,7 @@ const ITEM_COLS = [
   'id','num','dateIn','status','category','brand','colour','condition',
   'faultDesc','repairNotes','hoursSpent','buyPrice','postageIn','partsCost',
   'estSalePrice','estProfit','saleVenue','listedEbay','listedVinted',
-  'listedFacebook','listedCEX','listedOther','ebayItemNum','saleDate',
+  'listedFacebook','listedCEX','listedOther','recommendedVenue','ebayItemNum','saleDate',
   'salePrice','feesPost','netProfit','margin',
 ];
 

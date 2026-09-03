@@ -433,6 +433,92 @@
     /* Hidden helper */
     .hidden-field { display: none !important; }
 
+    /* ── Fault picker ───────────────────────────────────── */
+    .fault-picker {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .fault-picker > label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .fault-groups {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 0.75rem;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .fault-group-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-top: 0.25rem;
+    }
+    .fault-group-label:first-child { margin-top: 0; }
+    .fault-checks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem 0.5rem;
+    }
+    .fault-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.78rem;
+      color: var(--subtle);
+      cursor: pointer;
+      transition: all 0.12s;
+      user-select: none;
+    }
+    .fault-chip:hover { border-color: var(--accent); color: var(--text); }
+    .fault-chip input[type="checkbox"] { display: none; }
+    .fault-chip.checked {
+      background: #2a2560;
+      border-color: var(--accent);
+      color: var(--text);
+    }
+    /* ── Recommended channel chips ──────────────────────── */
+    .rec-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.25rem;
+    }
+    .rec-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 0.25rem 0.75rem;
+      font-size: 0.8rem;
+      color: var(--subtle);
+      cursor: pointer;
+      transition: all 0.12s;
+      user-select: none;
+    }
+    .rec-chip:hover { border-color: var(--accent); color: var(--text); }
+    .rec-chip input[type="checkbox"] { display: none; }
+    .rec-chip.checked { background: #2a2560; border-color: var(--accent); color: var(--text); font-weight: 600; }
+    .rec-chip .rec-note { font-size: 0.68rem; color: var(--muted); margin-left: 0.2rem; }
+
     /* ── Sold modal ─────────────────────────────────────── */
     #sold-modal .field-grid { grid-template-columns: 1fr; }
 
@@ -614,6 +700,10 @@
         <div class="field-section">Listing</div>
         <div class="field-grid">
           <div class="field">
+            <label>Recommended Channel</label>
+            <input type="text" data-field="recommendedVenue" placeholder="e.g. CEX, eBay">
+          </div>
+          <div class="field">
             <label>Sale Venue</label>
             <select data-field="saleVenue">
               <option value="">—</option>
@@ -770,9 +860,83 @@
           <option>Excellent</option>
         </select>
       </div>
-      <div class="field span-all">
+      <!-- Fault picker -->
+      <div class="fault-picker" id="fault-picker-wrap">
         <label>Fault Description</label>
-        <textarea id="new-fault" rows="3" placeholder="Describe the fault…"></textarea>
+        <div class="fault-groups" id="fault-chip-area">
+          <div class="fault-group-label">Sticks</div>
+          <div class="fault-checks">
+            <label class="fault-chip"><input type="checkbox" value="Left stick drift"><span>Left stick drift</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Left stick drifting up"><span>Left stick drifting up</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Left stick drifting down"><span>Left stick drifting down</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Left stick drifting left"><span>Left stick drifting left</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Left stick drifting right"><span>Left stick drifting right</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Left stick needs replacing"><span>Left stick needs replacing</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Left stick loose / wobbly"><span>Left stick loose / wobbly</span></label>
+            <label class="fault-chip"><input type="checkbox" value="L3 click not working"><span>L3 click not working</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Right stick drift"><span>Right stick drift</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Right stick drifting up"><span>Right stick drifting up</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Right stick drifting down"><span>Right stick drifting down</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Right stick drifting left"><span>Right stick drifting left</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Right stick drifting right"><span>Right stick drifting right</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Right stick needs replacing"><span>Right stick needs replacing</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Right stick loose / wobbly"><span>Right stick loose / wobbly</span></label>
+            <label class="fault-chip"><input type="checkbox" value="R3 click not working"><span>R3 click not working</span></label>
+          </div>
+          <div class="fault-group-label">Triggers &amp; Bumpers</div>
+          <div class="fault-checks">
+            <label class="fault-chip"><input type="checkbox" value="LT not registering"><span>LT not registering</span></label>
+            <label class="fault-chip"><input type="checkbox" value="RT not registering"><span>RT not registering</span></label>
+            <label class="fault-chip"><input type="checkbox" value="LT sticking / stuck"><span>LT sticking</span></label>
+            <label class="fault-chip"><input type="checkbox" value="RT sticking / stuck"><span>RT sticking</span></label>
+            <label class="fault-chip"><input type="checkbox" value="LB not working"><span>LB not working</span></label>
+            <label class="fault-chip"><input type="checkbox" value="RB not working"><span>RB not working</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Trigger spring broken"><span>Trigger spring broken</span></label>
+          </div>
+          <div class="fault-group-label">Buttons</div>
+          <div class="fault-checks">
+            <label class="fault-chip"><input type="checkbox" value="A / Cross not working"><span>A / Cross not working</span></label>
+            <label class="fault-chip"><input type="checkbox" value="B / Circle not working"><span>B / Circle not working</span></label>
+            <label class="fault-chip"><input type="checkbox" value="X / Square not working"><span>X / Square not working</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Y / Triangle not working"><span>Y / Triangle not working</span></label>
+            <label class="fault-chip"><input type="checkbox" value="D-pad not working"><span>D-pad not working</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Sticky buttons"><span>Sticky buttons</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Start / Options not working"><span>Start / Options not working</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Select / Share not working"><span>Select / Share not working</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Home / PS button not working"><span>Home / PS button not working</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Create button not working"><span>Create button not working</span></label>
+          </div>
+          <div class="fault-group-label">Connectivity &amp; Charging</div>
+          <div class="fault-checks">
+            <label class="fault-chip"><input type="checkbox" value="USB port damaged"><span>USB port damaged</span></label>
+            <label class="fault-chip"><input type="checkbox" value="USB port loose"><span>USB port loose</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Not charging"><span>Not charging</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Won't connect via Bluetooth"><span>Won't connect via Bluetooth</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Sync button not working"><span>Sync button not working</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Keeps disconnecting"><span>Keeps disconnecting</span></label>
+          </div>
+          <div class="fault-group-label">Power &amp; Battery</div>
+          <div class="fault-checks">
+            <label class="fault-chip"><input type="checkbox" value="Won't power on"><span>Won't power on</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Battery not holding charge"><span>Battery not holding charge</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Battery swollen"><span>Battery swollen</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Battery needs replacing"><span>Battery needs replacing</span></label>
+          </div>
+          <div class="fault-group-label">Physical &amp; Other</div>
+          <div class="fault-checks">
+            <label class="fault-chip"><input type="checkbox" value="Cracked / broken shell"><span>Cracked / broken shell</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Thumbstick caps missing"><span>Thumbstick caps missing</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Thumbstick caps worn"><span>Thumbstick caps worn</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Rumble not working"><span>Rumble not working</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Headphone jack not working"><span>Headphone jack not working</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Speaker not working"><span>Speaker not working</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Touchpad not working"><span>Touchpad not working</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Gyroscope / motion not working"><span>Gyroscope not working</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Missing battery cover"><span>Missing battery cover</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Water / liquid damage"><span>Water damage</span></label>
+          </div>
+        </div>
+        <textarea id="new-fault" rows="2" placeholder="Additional notes or custom fault description…" style="margin-top:0.4rem"></textarea>
       </div>
       <div class="field">
         <label>Buy Price (£)</label>
@@ -781,6 +945,28 @@
       <div class="field">
         <label>Postage In (£)</label>
         <input type="number" id="new-postagein" min="0" step="0.01" placeholder="0.00">
+      </div>
+
+      <!-- Recommended sale channel -->
+      <div class="field span-all">
+        <label>Recommended Sale Channel</label>
+        <div class="rec-chips" id="rec-chip-area">
+          <label class="rec-chip" title="Best for good condition with intact warranty stickers">
+            <input type="checkbox" value="CEX"><span>CEX</span><span class="rec-note">near-mint / sealed</span>
+          </label>
+          <label class="rec-chip">
+            <input type="checkbox" value="eBay"><span>eBay</span>
+          </label>
+          <label class="rec-chip">
+            <input type="checkbox" value="Facebook Marketplace"><span>Facebook</span>
+          </label>
+          <label class="rec-chip">
+            <input type="checkbox" value="Vinted"><span>Vinted</span>
+          </label>
+          <label class="rec-chip">
+            <input type="checkbox" value="Other"><span>Other</span>
+          </label>
+        </div>
       </div>
       <div class="field">
         <label>Date In</label>
@@ -976,6 +1162,52 @@ function getColourValue() {
     return colourSel.value;
   }
   return colourCustom.value || null;
+}
+
+// ── Fault chip toggles ──────────────────────────────────
+document.getElementById('fault-chip-area').addEventListener('click', e => {
+  const chip = e.target.closest('.fault-chip');
+  if (!chip) return;
+  const cb = chip.querySelector('input[type="checkbox"]');
+  cb.checked = !cb.checked;
+  chip.classList.toggle('checked', cb.checked);
+});
+
+function getFaultValue() {
+  const checked = [...document.querySelectorAll('#fault-chip-area input[type="checkbox"]:checked')]
+    .map(cb => cb.value);
+  const custom = document.getElementById('new-fault').value.trim();
+  return [...checked, ...(custom ? [custom] : [])].join('; ') || null;
+}
+
+function resetFaultPicker() {
+  document.querySelectorAll('#fault-chip-area input[type="checkbox"]').forEach(cb => {
+    cb.checked = false;
+    cb.closest('.fault-chip').classList.remove('checked');
+  });
+  document.getElementById('new-fault').value = '';
+}
+
+
+// ── Recommended channel chips ───────────────────────────
+document.getElementById('rec-chip-area').addEventListener('click', e => {
+  const chip = e.target.closest('.rec-chip');
+  if (!chip) return;
+  const cb = chip.querySelector('input[type="checkbox"]');
+  cb.checked = !cb.checked;
+  chip.classList.toggle('checked', cb.checked);
+});
+
+function getRecommendedVenue() {
+  return [...document.querySelectorAll('#rec-chip-area input[type="checkbox"]:checked')]
+    .map(cb => cb.value).join(', ') || null;
+}
+
+function resetRecommendedVenue() {
+  document.querySelectorAll('#rec-chip-area input[type="checkbox"]').forEach(cb => {
+    cb.checked = false;
+    cb.closest('.rec-chip').classList.remove('checked');
+  });
 }
 
 // Wire up cascading events
@@ -1232,7 +1464,9 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 // ── Add item modal ────────────────────────────────────────
 document.getElementById('btn-add').addEventListener('click', () => {
   document.getElementById('new-datein').value = new Date().toISOString().split('T')[0];
-  // Reset cascading fields
+  // Reset cascading fields + fault picker + rec chips
+  resetFaultPicker();
+  resetRecommendedVenue();
   document.getElementById('new-category').value = '';
   document.getElementById('new-brand').value = '';
   document.getElementById('new-model').value = '';
@@ -1264,11 +1498,12 @@ document.getElementById('add-confirm').addEventListener('click', async () => {
     brand,
     colour,
     condition: document.getElementById('new-condition').value || null,
-    faultDesc: document.getElementById('new-fault').value || null,
+    faultDesc: getFaultValue(),
     buyPrice:  parseFloat(document.getElementById('new-buyprice').value) || 0,
     postageIn: parseFloat(document.getElementById('new-postagein').value) || 0,
     dateIn:    document.getElementById('new-datein').value || null,
     status:    document.getElementById('new-status').value,
+    recommendedVenue: getRecommendedVenue(),
   };
 
   // Store model in faultDesc prefix if not already a db field, or as part of title
@@ -1283,9 +1518,11 @@ document.getElementById('add-confirm').addEventListener('click', async () => {
   selectItem(item.id);
 
   // Reset form
-  ['new-category','new-brand','new-condition','new-fault','new-buyprice','new-postagein'].forEach(id => {
+  ['new-category','new-brand','new-condition','new-buyprice','new-postagein'].forEach(id => {
     document.getElementById(id).value = '';
   });
+  resetFaultPicker();
+  resetRecommendedVenue();
   document.getElementById('new-status').value = 'Intake';
   document.getElementById('new-model').value = '';
   document.getElementById('new-colour-select').value = '';
