@@ -665,6 +665,12 @@
               <option>Other</option>
             </select>
           </div>
+          <div class="field" id="detail-model-field">
+            <label>Model</label>
+            <select data-field="model" id="detail-model">
+              <option value="">—</option>
+            </select>
+          </div>
           <div class="field">
             <label>Colour</label>
             <input type="text" data-field="colour" placeholder="e.g. Black">
@@ -1392,6 +1398,14 @@ async function quickStatus(status) {
 }
 
 // ── Populate fields ──────────────────────────────────────
+function updateDetailModelSelect(brand, currentModel) {
+  const sel = document.getElementById('detail-model');
+  const models = CONTROLLER_MODELS[brand] || [];
+  sel.innerHTML = '<option value="">—</option>' +
+    models.map(m => `<option${m === currentModel ? ' selected' : ''}>${m}</option>`).join('');
+  document.getElementById('detail-model-field').style.display = models.length ? '' : 'none';
+}
+
 function populateFields(item) {
   document.querySelectorAll('#item-detail [data-field]').forEach(el => {
     const field = el.dataset.field;
@@ -1402,10 +1416,17 @@ function populateFields(item) {
       el.value = val ?? '';
     }
   });
+  // Cascade model options based on brand
+  updateDetailModelSelect(item.brand || '', item.model || '');
 }
 
 // ── Field change tracking ────────────────────────────────
 document.getElementById('item-detail').addEventListener('change', e => {
+  // Cascade model select when brand changes in detail view
+  if (e.target.dataset.field === 'brand') {
+    const item = items.find(i => i.id === selectedId) || {};
+    updateDetailModelSelect(e.target.value, item.model || '');
+  }
   const el = e.target;
   const field = el.dataset.field;
   if (!field || !selectedId) return;
