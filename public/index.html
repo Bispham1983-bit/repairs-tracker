@@ -1061,20 +1061,24 @@ let pendingChanges = {};
 let confirmCallback = null;
 
 // ── Controller model + colour data ──────────────────────
-const CONTROLLER_MODELS = {
-  Microsoft: [
-    'Xbox 360',
-    'Xbox One',
-    'Xbox Series S / X',
-    'Xbox Elite Series 2',
-  ],
-  Sony: [
-    'DualShock 3 (PS3)',
-    'DualShock 4 (PS4)',
-    'DualSense (PS5)',
-    'DualSense Edge (PS5)',
-  ],
+const BRAND_MODELS = {
+  // Controllers
+  Controller: {
+    Microsoft: ['Xbox 360','Xbox One','Xbox Series S / X','Xbox Elite Series 2'],
+    Sony: ['DualShock 3 (PS3)','DualShock 4 (PS4)','DualSense (PS5)','DualSense Edge (PS5)'],
+  },
+  // Consoles
+  Console: {
+    Nintendo: ['Switch Lite','Switch (V1/V2)','Switch OLED'],
+    Sony: ['PlayStation 3','PlayStation 4','PlayStation 4 Pro','PlayStation 5','PlayStation 5 Slim'],
+    Microsoft: ['Xbox 360','Xbox One','Xbox One S','Xbox One X','Xbox Series S','Xbox Series X'],
+    Sega: ['Mega Drive / Genesis','Saturn','Dreamcast','Game Gear'],
+    Atari: ['2600','Jaguar','Other / Classic'],
+  },
 };
+
+// Legacy alias (detail view uses this)
+const CONTROLLER_MODELS = BRAND_MODELS.Controller;
 
 const MODEL_COLOURS = {
   'Xbox 360': [
@@ -1110,6 +1114,25 @@ const MODEL_COLOURS = {
   'DualSense Edge (PS5)': [
     'White', 'Midnight Black', 'Other / Custom',
   ],
+  // Console colours
+  'Switch Lite': ['Yellow','Grey','Turquoise','Coral','Blue','Dialga & Palkia Edition','Zacian & Zamazenta Edition','Other / Custom'],
+  'Switch (V1/V2)': ['Neon Red & Blue','Grey','Animal Crossing Edition','Fortnite Edition','Mario Red & Blue','Pokémon Scarlet & Violet','Other / Custom'],
+  'Switch OLED': ['White','Neon Red & Blue','Splatoon 3 Edition','Pokémon Scarlet & Violet','The Legend of Zelda Edition','Other / Custom'],
+  'PlayStation 3': ['Charcoal Black','Ceramic White','Silver','Other / Custom'],
+  'PlayStation 4': ['Jet Black','Glacier White','Gold','Silver','Other / Custom'],
+  'PlayStation 4 Pro': ['Jet Black','Glacier White','Gold','Other / Custom'],
+  'PlayStation 5': ['White / Black','Other / Custom'],
+  'PlayStation 5 Slim': ['White / Black','Other / Custom'],
+  'Xbox 360': ['Black','White','Other / Custom'],
+  'Xbox One': ['Black','White','Other / Custom'],
+  'Xbox One S': ['White','Other / Custom'],
+  'Xbox One X': ['Black','Teal','Other / Custom'],
+  'Xbox Series S': ['White','Black (Carbon)','Other / Custom'],
+  'Xbox Series X': ['Black','Halo Infinite Edition','Starfield Edition','Other / Custom'],
+  'Mega Drive / Genesis': ['Black','Other / Custom'],
+  'Saturn': ['Grey','Black','Other / Custom'],
+  'Dreamcast': ['White','Other / Custom'],
+  'Game Gear': ['Black','Red','Blue','Other / Custom'],
 };
 
 // ── Cascading dropdown logic ────────────────────────────
@@ -1119,12 +1142,12 @@ function updateModelField() {
   const modelField  = document.getElementById('field-new-model');
   const modelSelect = document.getElementById('new-model');
 
-  const isController = cat === 'Controller';
-  const hasModels = isController && CONTROLLER_MODELS[brand];
+  const catModels = BRAND_MODELS[cat] || {};
+  const hasModels = !!(catModels[brand] && catModels[brand].length);
 
   if (hasModels) {
     modelSelect.innerHTML = '<option value="">Select model…</option>' +
-      CONTROLLER_MODELS[brand].map(m => `<option>${m}</option>`).join('');
+      catModels[brand].map(m => `<option>${m}</option>`).join('');
     modelField.classList.remove('hidden-field');
   } else {
     modelField.classList.add('hidden-field');
@@ -1443,9 +1466,11 @@ async function quickStatus(status) {
 }
 
 // ── Populate fields ──────────────────────────────────────
-function updateDetailModelSelect(brand, currentModel) {
+function updateDetailModelSelect(brand, currentModel, cat) {
   const sel = document.getElementById('detail-model');
-  const models = CONTROLLER_MODELS[brand] || [];
+  const catKey = cat || (document.querySelector('#item-detail [data-field="category"]') || {}).value || 'Controller';
+  const catModels = BRAND_MODELS[catKey] || BRAND_MODELS.Controller;
+  const models = (catModels[brand]) || [];
   sel.innerHTML = '<option value="">—</option>' +
     models.map(m => `<option${m === currentModel ? ' selected' : ''}>${m}</option>`).join('');
   document.getElementById('detail-model-field').style.display = models.length ? '' : 'none';
@@ -1462,7 +1487,7 @@ function populateFields(item) {
     }
   });
   // Cascade model options based on brand
-  updateDetailModelSelect(item.brand || '', item.model || '');
+  updateDetailModelSelect(item.brand || '', item.model || '', item.category || '');
 }
 
 // ── Field change tracking ────────────────────────────────
@@ -1470,7 +1495,8 @@ document.getElementById('item-detail').addEventListener('change', e => {
   // Cascade model select when brand changes in detail view
   if (e.target.dataset.field === 'brand') {
     const item = items.find(i => i.id === selectedId) || {};
-    updateDetailModelSelect(e.target.value, item.model || '');
+    const cat = (document.querySelector('#item-detail [data-field="category"]') || {}).value || item.category || '';
+    updateDetailModelSelect(e.target.value, item.model || '', cat);
   }
   const el = e.target;
   const field = el.dataset.field;
