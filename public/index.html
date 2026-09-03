@@ -593,6 +593,10 @@
 <!-- ── Main ────────────────────────────────────────────── -->
 <div id="main">
   <div id="list-panel">
+    <div style="padding:8px 10px;border-bottom:1px solid #333">
+      <input id="search-box" type="search" placeholder="Search by #, name, colour, fault…"
+        style="width:100%;box-sizing:border-box;padding:7px 10px;border-radius:6px;border:1px solid #444;background:#1e1e2e;color:#e0e0e0;font-size:14px">
+    </div>
     <div id="loading">Loading…</div>
     <div id="item-list" style="display:none"></div>
     <div id="empty-list" style="display:none">No items match this filter.</div>
@@ -1052,6 +1056,7 @@
 let items = [];
 let currentFilter = 'all';
 let selectedId = null;
+let searchQuery = '';
 let pendingChanges = {};
 let confirmCallback = null;
 
@@ -1295,6 +1300,23 @@ function itemTitle(item) {
 }
 
 // ── Item list ───────────────────────────────────────────
+function filteredItems() {
+  const base = currentFilter === 'all' ? items : items.filter(i => i.status === currentFilter);
+  if (!searchQuery) return base;
+  const q = searchQuery;
+  return base.filter(item =>
+    String(item.num).includes(q) ||
+    String(item.num).padStart(3,'0').includes(q) ||
+    (item.brand    || '').toLowerCase().includes(q) ||
+    (item.model    || '').toLowerCase().includes(q) ||
+    (item.colour   || '').toLowerCase().includes(q) ||
+    (item.fault    || '').toLowerCase().includes(q) ||
+    (item.faultDesc|| '').toLowerCase().includes(q) ||
+    (item.status   || '').toLowerCase().includes(q) ||
+    (item.category || '').toLowerCase().includes(q)
+  );
+}
+
 function renderList() {
   const list = document.getElementById('item-list');
   const empty = document.getElementById('empty-list');
@@ -1302,9 +1324,23 @@ function renderList() {
 
   loading.style.display = 'none';
 
-  const filtered = currentFilter === 'all'
+  let filtered = currentFilter === 'all'
     ? items
     : items.filter(i => i.status === currentFilter);
+  if (searchQuery) {
+    const q = searchQuery;
+    filtered = filtered.filter(item =>
+      String(item.num).includes(q) ||
+      String(item.num).padStart(3,'0').includes(q) ||
+      (item.brand    || '').toLowerCase().includes(q) ||
+      (item.model    || '').toLowerCase().includes(q) ||
+      (item.colour   || '').toLowerCase().includes(q) ||
+      (item.fault    || '').toLowerCase().includes(q) ||
+      (item.faultDesc|| '').toLowerCase().includes(q) ||
+      (item.status   || '').toLowerCase().includes(q) ||
+      (item.category || '').toLowerCase().includes(q)
+    );
+  }
 
   if (!filtered.length) {
     list.style.display = 'none';
@@ -1673,6 +1709,14 @@ function mergeItem(updated) {
 
 // ── Init ──────────────────────────────────────────────────
 loadItems();
+
+document.getElementById('search-box').addEventListener('input', e => {
+  searchQuery = e.target.value.trim().toLowerCase();
+  renderList();
+  // Auto-select if exactly one result
+  const visible = filteredItems();
+  if (visible.length === 1) selectItem(String(visible[0].id));
+});
 </script>
 </body>
 </html>
