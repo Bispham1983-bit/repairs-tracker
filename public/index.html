@@ -126,7 +126,7 @@
 
     /* ── Item list ──────────────────────────────────────── */
     #list-panel {
-      width: 340px;
+      width: 420px;
       flex-shrink: 0;
       overflow-y: auto;
       border-right: 1px solid var(--border);
@@ -392,7 +392,7 @@
       border: 1px solid var(--border);
       border-radius: 12px;
       width: 100%;
-      max-width: 500px;
+      max-width: 540px;
       max-height: 90vh;
       overflow-y: auto;
       padding: 1.5rem;
@@ -429,6 +429,9 @@
       cursor: pointer;
     }
     .btn-primary:hover { background: var(--accent2); }
+
+    /* Hidden helper */
+    .hidden-field { display: none !important; }
 
     /* ── Sold modal ─────────────────────────────────────── */
     #sold-modal .field-grid { grid-template-columns: 1fr; }
@@ -711,6 +714,7 @@
   <div class="modal">
     <h2>Add New Item</h2>
     <div class="field-grid">
+      <!-- Row 1: Category + Brand -->
       <div class="field">
         <label>Category *</label>
         <select id="new-category">
@@ -734,10 +738,27 @@
           <option>Other</option>
         </select>
       </div>
-      <div class="field">
+
+      <!-- Controller model — shown only when category=Controller + brand=Sony/Microsoft -->
+      <div class="field span-all hidden-field" id="field-new-model">
+        <label>Model *</label>
+        <select id="new-model">
+          <option value="">Select model…</option>
+        </select>
+      </div>
+
+      <!-- Colour: dropdown (populated by model) + custom text fallback -->
+      <div class="field" id="field-new-colour-select" style="display:none">
         <label>Colour</label>
+        <select id="new-colour-select">
+          <option value="">Select…</option>
+        </select>
+      </div>
+      <div class="field" id="field-new-colour-custom">
+        <label id="label-new-colour">Colour</label>
         <input type="text" id="new-colour" placeholder="e.g. Black">
       </div>
+
       <div class="field">
         <label>Condition</label>
         <select id="new-condition">
@@ -837,6 +858,134 @@ let currentFilter = 'all';
 let selectedId = null;
 let pendingChanges = {};
 let confirmCallback = null;
+
+// ── Controller model + colour data ──────────────────────
+const CONTROLLER_MODELS = {
+  Microsoft: [
+    'Xbox 360',
+    'Xbox One',
+    'Xbox One S / X',
+    'Xbox Series S / X',
+    'Xbox Elite Series 2',
+  ],
+  Sony: [
+    'DualShock 3 (PS3)',
+    'DualShock 4 (PS4)',
+    'DualSense (PS5)',
+    'DualSense Edge (PS5)',
+  ],
+};
+
+const MODEL_COLOURS = {
+  'Xbox 360': [
+    'Black', 'White', 'Halo 3 Special Edition', 'Modern Warfare 2', 'Other / Custom',
+  ],
+  'Xbox One': [
+    'Black', 'White', 'Covert Forces', 'Recon Tech', 'Other / Custom',
+  ],
+  'Xbox One S / X': [
+    'Black', 'White', 'Blue', 'Red', 'Gold', 'Other / Custom',
+  ],
+  'Xbox Series S / X': [
+    'Carbon Black', 'Robot White', 'Shock Blue', 'Pulse Red', 'Electric Volt',
+    'Stellar Shift', 'Night Ops Camo', 'Daystrike Camo', 'Aqua Shift', 'Deep Pink',
+    'Velocity Green', 'Sour Apple', 'Mineral Camo', 'Lunar Shift', 'Fire Vapor',
+    'Other / Custom',
+  ],
+  'Xbox Elite Series 2': [
+    'Black', 'White', 'Halo Infinite Edition', 'Other / Custom',
+  ],
+  'DualShock 3 (PS3)': [
+    'Black', 'White', 'Silver', 'Blue', 'Red', 'Other / Custom',
+  ],
+  'DualShock 4 (PS4)': [
+    'Jet Black', 'Glacier White', 'Wave Blue', 'Magma Red', 'Steel Black',
+    'Sunset Orange', 'Berry Blue', 'Alpine Green', 'Gold', 'Silver',
+    'Midnight Blue', 'Copper', 'Crystal', 'Electric Purple', 'Rose Gold',
+    'Translucent Black', 'Red Camouflage', 'Other / Custom',
+  ],
+  'DualSense (PS5)': [
+    'White', 'Midnight Black', 'Cosmic Red', 'Nova Pink', 'Starlight Blue',
+    'Galactic Purple', 'Cobalt Blue', 'Sterling Silver', 'Volcanic Red',
+    'Chroma Aqua', 'Chroma Indigo', 'Chroma Teal', 'Deep Earth Brown',
+    'Deep Earth Khaki', 'Pearl', 'Lunar Blue', 'Other / Custom',
+  ],
+  'DualSense Edge (PS5)': [
+    'White', 'Midnight Black', 'Other / Custom',
+  ],
+};
+
+// ── Cascading dropdown logic ────────────────────────────
+function updateModelField() {
+  const cat   = document.getElementById('new-category').value;
+  const brand = document.getElementById('new-brand').value;
+  const modelField  = document.getElementById('field-new-model');
+  const modelSelect = document.getElementById('new-model');
+
+  const isController = cat === 'Controller';
+  const hasModels = isController && CONTROLLER_MODELS[brand];
+
+  if (hasModels) {
+    modelSelect.innerHTML = '<option value="">Select model…</option>' +
+      CONTROLLER_MODELS[brand].map(m => `<option>${m}</option>`).join('');
+    modelField.classList.remove('hidden-field');
+  } else {
+    modelField.classList.add('hidden-field');
+    modelSelect.value = '';
+  }
+
+  updateColourField();
+}
+
+function updateColourField() {
+  const model       = document.getElementById('new-model').value;
+  const colourSel   = document.getElementById('new-colour-select');
+  const colourSelWrap  = document.getElementById('field-new-colour-select');
+  const colourCustomWrap = document.getElementById('field-new-colour-custom');
+  const colourCustom = document.getElementById('new-colour');
+  const colourLabel  = document.getElementById('label-new-colour');
+
+  const colours = MODEL_COLOURS[model];
+
+  if (colours) {
+    colourSel.innerHTML = '<option value="">Select colour…</option>' +
+      colours.map(c => `<option>${c}</option>`).join('');
+    colourSelWrap.style.display = '';
+    // Show custom input only when "Other / Custom" is picked
+    const isOther = colourSel.value === 'Other / Custom';
+    colourCustomWrap.style.display = isOther ? '' : 'none';
+    colourLabel.textContent = 'Custom Colour';
+    colourCustom.placeholder = 'Describe the colour…';
+  } else {
+    colourSelWrap.style.display = 'none';
+    colourCustomWrap.style.display = '';
+    colourLabel.textContent = 'Colour';
+    colourCustom.placeholder = 'e.g. Black';
+  }
+}
+
+function getColourValue() {
+  const colourSel = document.getElementById('new-colour-select');
+  const colourCustom = document.getElementById('new-colour');
+  const colourSelWrap = document.getElementById('field-new-colour-select');
+
+  if (colourSelWrap.style.display !== 'none' && colourSel.value) {
+    if (colourSel.value === 'Other / Custom') {
+      return colourCustom.value || null;
+    }
+    return colourSel.value;
+  }
+  return colourCustom.value || null;
+}
+
+// Wire up cascading events
+document.getElementById('new-category').addEventListener('change', updateModelField);
+document.getElementById('new-brand').addEventListener('change', updateModelField);
+document.getElementById('new-model').addEventListener('change', updateColourField);
+document.getElementById('new-colour-select').addEventListener('change', () => {
+  const isOther = document.getElementById('new-colour-select').value === 'Other / Custom';
+  document.getElementById('field-new-colour-custom').style.display = isOther ? '' : 'none';
+});
 
 // ── API helpers ─────────────────────────────────────────
 async function api(method, path, body) {
@@ -1082,8 +1231,14 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 
 // ── Add item modal ────────────────────────────────────────
 document.getElementById('btn-add').addEventListener('click', () => {
-  // Set today's date
   document.getElementById('new-datein').value = new Date().toISOString().split('T')[0];
+  // Reset cascading fields
+  document.getElementById('new-category').value = '';
+  document.getElementById('new-brand').value = '';
+  document.getElementById('new-model').value = '';
+  document.getElementById('new-colour-select').value = '';
+  document.getElementById('new-colour').value = '';
+  updateModelField();
   openModal('add-modal');
 });
 
@@ -1094,10 +1249,20 @@ document.getElementById('add-confirm').addEventListener('click', async () => {
   const brand    = document.getElementById('new-brand').value;
   if (!category || !brand) { alert('Category and Brand are required.'); return; }
 
+  // Require model when shown
+  const modelField = document.getElementById('field-new-model');
+  const model = document.getElementById('new-model').value;
+  if (!modelField.classList.contains('hidden-field') && !model) {
+    alert('Please select a model.');
+    return;
+  }
+
+  const colour = getColourValue();
+
   const data = {
     category,
     brand,
-    colour:    document.getElementById('new-colour').value || null,
+    colour,
     condition: document.getElementById('new-condition').value || null,
     faultDesc: document.getElementById('new-fault').value || null,
     buyPrice:  parseFloat(document.getElementById('new-buyprice').value) || 0,
@@ -1105,6 +1270,10 @@ document.getElementById('add-confirm').addEventListener('click', async () => {
     dateIn:    document.getElementById('new-datein').value || null,
     status:    document.getElementById('new-status').value,
   };
+
+  // Store model in faultDesc prefix if not already a db field, or as part of title
+  // (we append the model to the brand for the title display)
+  if (model) data.model = model;
 
   const item = await api('POST', '/api/items', data);
   items.push(item);
@@ -1114,11 +1283,14 @@ document.getElementById('add-confirm').addEventListener('click', async () => {
   selectItem(item.id);
 
   // Reset form
-  ['new-category','new-brand','new-colour','new-condition','new-fault','new-buyprice','new-postagein'].forEach(id => {
-    const el = document.getElementById(id);
-    el.value = el.tagName === 'SELECT' ? '' : '';
+  ['new-category','new-brand','new-condition','new-fault','new-buyprice','new-postagein'].forEach(id => {
+    document.getElementById(id).value = '';
   });
   document.getElementById('new-status').value = 'Intake';
+  document.getElementById('new-model').value = '';
+  document.getElementById('new-colour-select').value = '';
+  document.getElementById('new-colour').value = '';
+  updateModelField();
 });
 
 // ── Sold modal ────────────────────────────────────────────
