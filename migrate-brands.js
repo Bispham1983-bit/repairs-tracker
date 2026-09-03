@@ -8,16 +8,21 @@ const path = require('path');
 const DB_PATH = path.join(__dirname, 'repairs.db');
 const db = new Database(DB_PATH);
 
+// Ensure columns exist (safe on older DBs)
+const ensureColumns = [
+  "ALTER TABLE items ADD COLUMN brand TEXT DEFAULT ''",
+  "ALTER TABLE items ADD COLUMN model TEXT DEFAULT ''",
+];
+for (const sql of ensureColumns) {
+  try { db.exec(sql); } catch(e) { /* already exists */ }
+}
+
 // Mapping derived from Google Sheets (Console_Repair_Tracker)
-// num → { brand, model }
 const updates = [
-  // Xbox Series S/X — most items
   ...[1,2,3,4,5,7,8,9,10,11,12,13,14,15,16,17,18,19,21,22,23,25,26,27,28,29,31,32,33,34,35,36,37,38,40,41,42,43,44,45,46,47,48,49]
     .map(num => ({ num, brand: 'Microsoft', model: 'Xbox Series S / X' })),
-  // Xbox One
   ...[20, 24, 30, 39]
     .map(num => ({ num, brand: 'Microsoft', model: 'Xbox One' })),
-  // PS5 DualSense
   { num: 6, brand: 'Sony', model: 'DualSense (PS5)' },
 ];
 
