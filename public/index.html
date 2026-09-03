@@ -866,16 +866,14 @@
         <div class="fault-groups" id="fault-chip-area">
           <div class="fault-group-label">Sticks</div>
           <div class="fault-checks">
-            <label class="fault-chip"><input type="checkbox" value="Left stick drift"><span>Left stick drift</span></label>
-            <label class="fault-chip"><input type="checkbox" value="Left stick drifting up"><span>Left stick drifting up</span></label>
+<label class="fault-chip"><input type="checkbox" value="Left stick drifting up"><span>Left stick drifting up</span></label>
             <label class="fault-chip"><input type="checkbox" value="Left stick drifting down"><span>Left stick drifting down</span></label>
             <label class="fault-chip"><input type="checkbox" value="Left stick drifting left"><span>Left stick drifting left</span></label>
             <label class="fault-chip"><input type="checkbox" value="Left stick drifting right"><span>Left stick drifting right</span></label>
             <label class="fault-chip"><input type="checkbox" value="Left stick needs replacing"><span>Left stick needs replacing</span></label>
             <label class="fault-chip"><input type="checkbox" value="Left stick loose / wobbly"><span>Left stick loose / wobbly</span></label>
             <label class="fault-chip"><input type="checkbox" value="L3 click not working"><span>L3 click not working</span></label>
-            <label class="fault-chip"><input type="checkbox" value="Right stick drift"><span>Right stick drift</span></label>
-            <label class="fault-chip"><input type="checkbox" value="Right stick drifting up"><span>Right stick drifting up</span></label>
+<label class="fault-chip"><input type="checkbox" value="Right stick drifting up"><span>Right stick drifting up</span></label>
             <label class="fault-chip"><input type="checkbox" value="Right stick drifting down"><span>Right stick drifting down</span></label>
             <label class="fault-chip"><input type="checkbox" value="Right stick drifting left"><span>Right stick drifting left</span></label>
             <label class="fault-chip"><input type="checkbox" value="Right stick drifting right"><span>Right stick drifting right</span></label>
@@ -908,9 +906,7 @@
           </div>
           <div class="fault-group-label">Connectivity &amp; Charging</div>
           <div class="fault-checks">
-            <label class="fault-chip"><input type="checkbox" value="USB port damaged"><span>USB port damaged</span></label>
-            <label class="fault-chip"><input type="checkbox" value="USB port loose"><span>USB port loose</span></label>
-            <label class="fault-chip"><input type="checkbox" value="Not charging"><span>Not charging</span></label>
+            <label class="fault-chip"><input type="checkbox" value="USB port needs replacing"><span>USB port needs replacing</span></label>
             <label class="fault-chip"><input type="checkbox" value="Won't connect via Bluetooth"><span>Won't connect via Bluetooth</span></label>
             <label class="fault-chip"><input type="checkbox" value="Sync button not working"><span>Sync button not working</span></label>
             <label class="fault-chip"><input type="checkbox" value="Keeps disconnecting"><span>Keeps disconnecting</span></label>
@@ -1050,7 +1046,6 @@ const CONTROLLER_MODELS = {
   Microsoft: [
     'Xbox 360',
     'Xbox One',
-    'Xbox One S / X',
     'Xbox Series S / X',
     'Xbox Elite Series 2',
   ],
@@ -1068,9 +1063,6 @@ const MODEL_COLOURS = {
   ],
   'Xbox One': [
     'Black', 'White', 'Covert Forces', 'Recon Tech', 'Other / Custom',
-  ],
-  'Xbox One S / X': [
-    'Black', 'White', 'Blue', 'Red', 'Gold', 'Other / Custom',
   ],
   'Xbox Series S / X': [
     'Carbon Black', 'Robot White', 'Shock Blue', 'Pulse Red', 'Electric Volt',
@@ -1164,13 +1156,38 @@ function getColourValue() {
   return colourCustom.value || null;
 }
 
-// ── Fault chip toggles ──────────────────────────────────
+// ── Fault chip toggles + frequency sorting ──────────────
+let faultFreq = {};
+try { faultFreq = JSON.parse(localStorage.getItem('faultFreq') || '{}'); } catch(e) {}
+
+function saveFaultFreq() {
+  try { localStorage.setItem('faultFreq', JSON.stringify(faultFreq)); } catch(e) {}
+}
+
+function sortFaultChips() {
+  // Within each .fault-checks group, sort chips by frequency descending
+  document.querySelectorAll('#fault-chip-area .fault-checks').forEach(group => {
+    const chips = [...group.querySelectorAll('.fault-chip')];
+    chips.sort((a, b) => {
+      const aVal = a.querySelector('input').value;
+      const bVal = b.querySelector('input').value;
+      return (faultFreq[bVal] || 0) - (faultFreq[aVal] || 0);
+    });
+    chips.forEach(c => group.appendChild(c));
+  });
+}
+
 document.getElementById('fault-chip-area').addEventListener('click', e => {
   const chip = e.target.closest('.fault-chip');
   if (!chip) return;
   const cb = chip.querySelector('input[type="checkbox"]');
   cb.checked = !cb.checked;
   chip.classList.toggle('checked', cb.checked);
+  if (cb.checked) {
+    faultFreq[cb.value] = (faultFreq[cb.value] || 0) + 1;
+    saveFaultFreq();
+    sortFaultChips();
+  }
 });
 
 function getFaultValue() {
@@ -1187,6 +1204,9 @@ function resetFaultPicker() {
   });
   document.getElementById('new-fault').value = '';
 }
+
+// Sort on load using saved frequencies
+document.addEventListener('DOMContentLoaded', sortFaultChips);
 
 
 // ── Recommended channel chips ───────────────────────────
@@ -1464,12 +1484,14 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 // ── Add item modal ────────────────────────────────────────
 document.getElementById('btn-add').addEventListener('click', () => {
   document.getElementById('new-datein').value = new Date().toISOString().split('T')[0];
-  // Reset cascading fields + fault picker + rec chips
+  // Default to most common: Controller / Microsoft / Xbox Series S/X
   resetFaultPicker();
   resetRecommendedVenue();
-  document.getElementById('new-category').value = '';
-  document.getElementById('new-brand').value = '';
-  document.getElementById('new-model').value = '';
+  document.getElementById('new-category').value = 'Controller';
+  document.getElementById('new-brand').value = 'Microsoft';
+  updateModelField();
+  document.getElementById('new-model').value = 'Xbox Series S / X';
+  updateColourField();
   document.getElementById('new-colour-select').value = '';
   document.getElementById('new-colour').value = '';
   updateModelField();
