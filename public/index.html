@@ -541,6 +541,7 @@
       #detail-panel.mobile-show { display: block; }
       .field-grid { grid-template-columns: 1fr !important; }
       .field.span2, .field.span-all { grid-column: 1; }
+      #btn-back-mobile { display: inline-block !important; }
     }
   </style>
 </head>
@@ -606,9 +607,12 @@
     <div id="item-detail" style="display:none">
       <!-- Header -->
       <div id="detail-header">
-        <div style="flex:1">
-          <h2 id="d-title">—</h2>
-          <div class="sub" id="d-sub">—</div>
+        <div style="flex:1;display:flex;align-items:center;gap:10px">
+          <button id="btn-back-mobile" onclick="document.getElementById('list-panel').classList.remove('hidden');document.getElementById('detail-panel').classList.remove('mobile-show');" style="display:none;background:#444;border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px;flex-shrink:0">← Back</button>
+          <div>
+            <h2 id="d-title">—</h2>
+            <div class="sub" id="d-sub">—</div>
+          </div>
         </div>
         <span class="status-pill" id="d-status-pill">—</span>
       </div>
@@ -1338,6 +1342,11 @@ function selectItem(id) {
   selectedId = id;
   renderList();
   renderDetail();
+  // Mobile: show detail, hide list
+  if (window.innerWidth <= 640) {
+    document.getElementById('list-panel').classList.add('hidden');
+    document.getElementById('detail-panel').classList.add('mobile-show');
+  }
 }
 
 // ── Detail panel ─────────────────────────────────────────
