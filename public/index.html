@@ -936,6 +936,16 @@
             <label class="fault-chip"><input type="checkbox" value="Battery swollen"><span>Battery swollen</span></label>
             <label class="fault-chip"><input type="checkbox" value="Battery needs replacing"><span>Battery needs replacing</span></label>
           </div>
+          <div class="fault-group-label screen-faults" style="display:none">Screen</div>
+          <div class="fault-checks screen-faults" style="display:none">
+            <label class="fault-chip"><input type="checkbox" value="Broken screen"><span>Broken screen</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Screen cracked but working"><span>Cracked but working</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Dead pixels"><span>Dead pixels</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Backlight bleed"><span>Backlight bleed</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Touch not working"><span>Touch not working</span></label>
+            <label class="fault-chip"><input type="checkbox" value="Screen flickering"><span>Screen flickering</span></label>
+            <label class="fault-chip"><input type="checkbox" value="No display / black screen"><span>No display</span></label>
+          </div>
           <div class="fault-group-label">Physical &amp; Other</div>
           <div class="fault-checks">
             <label class="fault-chip"><input type="checkbox" value="Cracked / broken shell"><span>Cracked / broken shell</span></label>
@@ -1076,6 +1086,13 @@ const BRAND_MODELS = {
     Atari: ['2600','Jaguar','Other / Classic'],
   },
 };
+
+
+const SCREEN_MODELS = new Set([
+  'Switch Lite','Switch (V1/V2)','Switch OLED',
+  'Game Gear',
+  'PlayStation 3','PlayStation 4','PlayStation 4 Pro','PlayStation 5','PlayStation 5 Slim',
+]);
 
 // Legacy alias (detail view uses this)
 const CONTROLLER_MODELS = BRAND_MODELS.Controller;
@@ -1275,7 +1292,12 @@ function resetRecommendedVenue() {
 // Wire up cascading events
 document.getElementById('new-category').addEventListener('change', updateModelField);
 document.getElementById('new-brand').addEventListener('change', updateModelField);
-document.getElementById('new-model').addEventListener('change', updateColourField);
+document.getElementById('new-model').addEventListener('change', () => {
+  updateColourField();
+  const model = document.getElementById('new-model').value;
+  const show = SCREEN_MODELS.has(model);
+  document.querySelectorAll('.screen-faults').forEach(el => el.style.display = show ? '' : 'none');
+});
 document.getElementById('new-colour-select').addEventListener('change', () => {
   const isOther = document.getElementById('new-colour-select').value === 'Other / Custom';
   document.getElementById('field-new-colour-custom').style.display = isOther ? '' : 'none';
