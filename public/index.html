@@ -1839,6 +1839,7 @@ document.getElementById('search-box').addEventListener('input', e => {
     </div>
     <div style="display:flex;gap:4px;padding:6px 8px;border-bottom:1px solid #333;flex-wrap:wrap">
       <button class="job-filter-btn active" data-status="all">All</button>
+      <button class="job-filter-btn" data-status="Awaiting Item">Awaiting</button>
       <button class="job-filter-btn" data-status="Checked In">Checked In</button>
       <button class="job-filter-btn" data-status="In Progress">WIP</button>
       <button class="job-filter-btn" data-status="Ready">Ready</button>
@@ -1872,7 +1873,7 @@ document.getElementById('search-box').addEventListener('input', e => {
         <div class="field"><label>Date In</label><input type="date" data-jfield="dateIn"></div>
         <div class="field"><label>Status</label>
           <select data-jfield="status">
-            <option>Checked In</option><option>In Progress</option><option>Ready</option><option>Collected</option>
+            <option>Awaiting Item</option><option>Checked In</option><option>In Progress</option><option>Ready</option><option>Collected</option>
           </select>
         </div>
         <div class="field"><label>Customer Name</label><input type="text" data-jfield="customerName" placeholder="Name"></div>
@@ -1998,10 +1999,10 @@ let jobPendingChanges = {};
 let jobFilter = 'all';
 let jobSearchQ = '';
 
-const JOB_STATUS_ORDER = ['Checked In','In Progress','Ready','Collected'];
+const JOB_STATUS_ORDER = ['Awaiting Item','Checked In','In Progress','Ready','Collected'];
 
 function jobPillClass(status) {
-  const m = {'Checked In':'blue','In Progress':'amber','Ready':'green','Collected':'grey'};
+  const m = {'Awaiting Item':'purple','Checked In':'blue','In Progress':'amber','Ready':'green','Collected':'grey'};
   return m[status] || '';
 }
 
@@ -2085,23 +2086,26 @@ function renderJobDetail() {
 
   // Action bar
   const bar = document.getElementById('job-action-bar');
-  const idx = JOB_STATUS_ORDER.indexOf(job.status);
-  const next = JOB_STATUS_ORDER[idx + 1];
   bar.innerHTML = '';
-  if (next) {
-    const btn = document.createElement('button');
-    btn.textContent = 'Mark: ' + next;
-    btn.style.cssText = 'background:var(--accent);border:none;color:#fff;padding:7px 14px;border-radius:6px;cursor:pointer;font-weight:600';
-    btn.onclick = () => advanceJobStatus(next);
-    bar.appendChild(btn);
+  const mkBtn = (text, bg, color, fn) => {
+    const b = document.createElement('button');
+    b.textContent = text;
+    b.style.cssText = `background:${bg};border:none;color:${color};padding:7px 14px;border-radius:6px;cursor:pointer;font-weight:600`;
+    b.onclick = fn;
+    bar.appendChild(b);
+    return b;
+  };
+  // Primary action button — context-aware
+  if (job.status === 'Awaiting Item') {
+    mkBtn('📬 Mark Received', 'var(--accent)', '#fff', () => markReceived());
+  } else if (job.status === 'Ready' && job.mailIn && !job.datePostedBack) {
+    mkBtn('📦 Mark Posted Back', 'var(--accent)', '#fff', () => markPostedBack());
+  } else {
+    const idx = JOB_STATUS_ORDER.indexOf(job.status);
+    const next = JOB_STATUS_ORDER[idx + 1];
+    if (next) mkBtn('Mark: ' + next, 'var(--accent)', '#fff', () => advanceJobStatus(next));
   }
-  if (!job.paid) {
-    const btn = document.createElement('button');
-    btn.textContent = '💰 Mark Paid';
-    btn.style.cssText = 'background:#2a5c2a;border:none;color:#6fbf4a;padding:7px 14px;border-radius:6px;cursor:pointer;font-weight:600';
-    btn.onclick = () => markJobPaid();
-    bar.appendChild(btn);
-  }
+  if (!job.paid) mkBtn('💰 Mark Paid', '#2a5c2a', '#6fbf4a', () => markJobPaid());
   const delBtn = document.createElement('button');
   delBtn.textContent = 'Delete';
   delBtn.style.cssText = 'background:transparent;border:1px solid var(--subtle);color:var(--muted);padding:7px 12px;border-radius:6px;cursor:pointer;margin-left:auto';
@@ -2138,6 +2142,26 @@ async function markJobPaid() {
     renderJobList();
     renderJobDetail();
   } catch(e) { alert('Error marking paid: ' + e.message); }
+}
+
+async function markReceived() {
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    const updated = await api('PUT', '/api/jobs/' + selectedJobId, { status: 'Checked In', dateReceived: today });
+    mergeJob(updated);
+    renderJobList();
+    renderJobDetail();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+async function markPostedBack() {
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    const updated = await api('PUT', '/api/jobs/' + selectedJobId, { status: 'Collected', datePostedBack: today });
+    mergeJob(updated);
+    renderJobList();
+    renderJobDetail();
+  } catch(e) { alert('Error: ' + e.message); }
 }
 
 async function deleteJob() {
@@ -2314,7 +2338,7 @@ document.getElementById('nj-confirm').addEventListener('click', async () => {
     faultNotes:      document.getElementById('nj-fault-notes').value.trim(),
     quotedPrice:     parseFloat(document.getElementById('nj-quoted').value) || 0,
     mailIn:          document.getElementById('nj-mailin').checked,
-    status:          'Checked In',
+    status:          data.mailIn ? 'Awaiting Item' : 'Checked In',
   };
   try {
     const job = await api('POST', '/api/jobs', data);
