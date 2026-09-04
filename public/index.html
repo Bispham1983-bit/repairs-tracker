@@ -2123,7 +2123,7 @@ function renderJobDetail() {
     mkBtn('💵 Cash', '#2a5c2a', '#6fbf4a', () => markJobPaid('Cash'));
     mkBtn('💳 Card', '#1a3c6a', '#4a9fbf', () => markJobPaid('Card'));
     mkBtn('🏦 Transfer', '#3a3a2a', '#bfb44a', () => markJobPaid('Bank Transfer'));
-    mkBtn('📲 Charge via Square', '#1a1a3a', '#7c6ff7', () => chargeViaSquare());
+    mkBtn('📲 Charge via SumUp', '#1a1a3a', '#7c6ff7', () => chargeViaSquare());
     mkBtn('📋 Copy Payment Request', '#1a2a2a', '#4abf8a', () => copyPaymentRequest());
   }
   const delBtn = document.createElement('button');
@@ -2182,15 +2182,16 @@ function chargeViaSquare() {
   var job = jobs.find(function(j) { return j.id === selectedJobId; });
   if (!job) return;
   var amount = (+job.quotedPrice || 0).toFixed(2);
+  var title = encodeURIComponent('Job #' + job.num + ' - ' + (job.customerName||'') + ' - ' + (job.device||''));
+  var url = 'sumupmerchant://pay/1.0?affiliate-key=sup_afk_kJVWin8gUUhfJIezrP9ftB2cbeIW3cbG&amount=' + amount + '&currency=GBP&title=' + title + '&callback=' + encodeURIComponent(window.location.href);
   var overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center';
   overlay.innerHTML = '<div style="background:#1a1d27;border:1px solid #2d3148;border-radius:12px;padding:32px;text-align:center;max-width:300px">'
-    + '<div style="font-size:0.85rem;color:#64748b;margin-bottom:8px">Charge in Square POS</div>'
+    + '<div style="font-size:0.85rem;color:#64748b;margin-bottom:8px">Charge via SumUp</div>'
     + '<div style="font-size:3rem;font-weight:700;color:#e2e8f0;margin-bottom:4px">£' + amount + '</div>'
-    + '<div style="font-size:0.8rem;color:#64748b;margin-bottom:4px">Job #' + job.num + ' — ' + (job.customerName||'') + '</div>'
-    + '<div style="font-size:0.75rem;color:#64748b;margin-bottom:24px">' + (job.device||'') + '</div>'
-    + '<div style="font-size:0.8rem;color:#94a3b8;margin-bottom:20px">Open Square POS and enter this amount</div>'
-    + '<button onclick="this.closest(\'div\').parentNode.remove()" style="background:#7c6ff7;border:none;color:#fff;padding:10px 28px;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.95rem">Done</button>'
+    + '<div style="font-size:0.8rem;color:#64748b;margin-bottom:20px">Job #' + job.num + ' — ' + (job.customerName||'') + '</div>'
+    + '<a href="' + url + '" style="display:block;background:#00b8a9;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:1rem;margin-bottom:12px">📲 Open SumUp</a>'
+    + '<button onclick="this.closest(\'div\').parentNode.remove()" style="background:transparent;border:none;color:#64748b;cursor:pointer;font-size:0.9rem">Cancel</button>'
     + '</div>';
   overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
   document.body.appendChild(overlay);
