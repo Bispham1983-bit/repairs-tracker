@@ -2392,12 +2392,13 @@ function renderPnl() {
     + '<td style="padding:5px 6px" colspan="3">Total</td>'
     + '<td style="padding:5px 6px;text-align:right">' + fmt(totRev) + '</td>'
     + '<td style="padding:5px 6px;text-align:right;color:var(--muted)">' + fmt(totParts) + '</td>'
-    + '<td style="padding:5px 6px;text-align:right;color:' + (totProfit>=0?'#22c55e':'#ef4444') + '">' + fmt(totProfit) + '</td>'
+    + '<td style="padding:5px 6px;text-align:right;color:#ef4444">' + fmt(squareFees) + '</td>'
+    + '<td style="padding:5px 6px;text-align:right;color:' + (netProfit>=0?'#22c55e':'#ef4444') + '">' + fmt(netProfit) + '</td>'
     + '</tr>' : '');
 
   // Per-job list
   document.getElementById('pnl-tbody').innerHTML = done.slice().reverse().map(function(j) {
-    var rev = +j.quotedPrice||0, parts = +j.partsCost||0, profit = rev - parts;
+    var rev = +j.quotedPrice||0, parts = +j.partsCost||0, sqFee = j.paymentMethod === 'Card' ? rev * 0.0175 : 0, profit = rev - parts - sqFee;
     return '<tr style="border-top:1px solid var(--border)">'
       + '<td style="padding:5px 6px;color:var(--muted)">' + j.num + '</td>'
       + '<td style="padding:5px 6px">' + (j.customerName||'') + '</td>'
