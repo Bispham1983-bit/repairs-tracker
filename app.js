@@ -102,11 +102,12 @@ app.delete('/api/jobs/:id', (req, res) => {
 // ── Square ───────────────────────────────────────────────
 const https = require('https');
 
-function squareRequest(method, endpoint, body, token) {
+function squareRequest(method, endpoint, body, token, hostname) {
+  hostname = hostname || 'connect.squareup.com';
   return new Promise((resolve, reject) => {
     const data = body ? JSON.stringify(body) : null;
     const req = https.request({
-      hostname: 'connect.squareup.com',
+      hostname: hostname,
       path: endpoint,
       method,
       headers: {
@@ -168,6 +169,28 @@ app.get('/api/bank', (req, res) => {
     sortCode:  process.env.BANK_SORT_CODE  || '',
     account:   process.env.BANK_ACCOUNT    || ''
   });
+});
+
+
+// ── SumUp Payment Links ──────────────────────────────────
+app.post('/api/sumup/payment-link', async (req, res) => {
+  const token = process.env.SUMUP_API_KEY;
+  if (!token) return res.status(500).json({ error: 'SumUp not configured' });
+  try {
+    const { amount, note } = req.body;
+    const result = await squareRequest('POST', '/v0.1/checkouts', {
+      checkout_reference: 'JOB-' + Date.now(),
+      amount: parseFloat(amount),
+      currency: 'GBP',
+      description: note || 'Repair Job',
+      merchant_code: process.env.SUMUP_MERCHANT_CODE || ''
+    }, token, 'api.sumup.com');
+    if (result.id) {
+      res.json({ url: 'https://pay.sumup.com/b2c/checkout/' + result.id });
+    } else {
+      res.status(500).json({ error: JSON.stringify(result) });
+    }
+  } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 app.listen(PORT, '0.0.0.0', () => {

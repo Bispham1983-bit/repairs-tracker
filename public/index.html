@@ -2125,6 +2125,7 @@ function renderJobDetail() {
     mkBtn('🏦 Transfer', '#3a3a2a', '#bfb44a', () => markJobPaid('Bank Transfer'));
     mkBtn('📲 Charge via SumUp', '#1a1a3a', '#7c6ff7', () => chargeViaSquare());
     mkBtn('📋 Copy Payment Request', '#1a2a2a', '#4abf8a', () => copyPaymentRequest());
+    mkBtn('🔗 Send Payment Link', '#1a2a3a', '#4a9fbf', () => sendSumupLink());
   }
   const delBtn = document.createElement('button');
   delBtn.textContent = 'Delete';
@@ -2156,6 +2157,29 @@ async function advanceJobStatus(next) {
 }
 
 
+
+
+async function sendSumupLink() {
+  var job = jobs.find(function(j) { return j.id === selectedJobId; });
+  if (!job || !job.quotedPrice) return alert('No quoted price on this job.');
+  var btn = event.target;
+  btn.textContent = 'Generating…'; btn.disabled = true;
+  try {
+    var res = await api('POST', '/api/sumup/payment-link', {
+      amount: job.quotedPrice,
+      note: 'Job #' + job.num + ' - ' + (job.customerName||'') + ' - ' + (job.device||'')
+    });
+    btn.textContent = '🔗 Send Payment Link'; btn.disabled = false;
+    if (res.url) {
+      var copied = false;
+      try { await navigator.clipboard.writeText(res.url); copied = true; } catch(e) {}
+      alert((copied ? 'Link copied to clipboard!\n\n' : '') + res.url);
+    }
+  } catch(e) {
+    btn.textContent = '🔗 Send Payment Link'; btn.disabled = false;
+    alert('Error: ' + e.message);
+  }
+}
 
 async function copyPaymentRequest() {
   var job = jobs.find(function(j) { return j.id === selectedJobId; });
