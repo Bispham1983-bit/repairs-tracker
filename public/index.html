@@ -2124,7 +2124,6 @@ function renderJobDetail() {
     mkBtn('💳 Card', '#1a3c6a', '#4a9fbf', () => markJobPaid('Card'));
     mkBtn('🏦 Transfer', '#3a3a2a', '#bfb44a', () => markJobPaid('Bank Transfer'));
     mkBtn('📲 Charge via Square', '#1a1a3a', '#7c6ff7', () => chargeViaSquare());
-    mkBtn('🔗 Send Payment Link', '#1a2a3a', '#4a9fbf', () => sendPaymentLink());
     mkBtn('📋 Copy Payment Request', '#1a2a2a', '#4abf8a', () => copyPaymentRequest());
   }
   const delBtn = document.createElement('button');
@@ -2164,13 +2163,16 @@ async function copyPaymentRequest() {
   try {
     var bank = await api('GET', '/api/bank');
     var amount = (+job.quotedPrice || 0).toFixed(2);
+    var shipping = job.mailIn
+      ? '\n\nOnce payment is received I\'ll get it shipped same day!'
+      : '';
     var msg = 'Hi ' + (job.customerName || 'there') + ', your ' + (job.device || 'device') + ' repair is complete! '
       + 'Total: \u00a3' + amount + '. '
       + 'Please pay by bank transfer:\n'
       + 'Sort code: ' + bank.sortCode + '\n'
       + 'Account: ' + bank.account + '\n'
-      + 'Ref: Job #' + job.num + '\n\n'
-      + 'Once payment is received I\'ll get it shipped same day!';
+      + 'Ref: Job #' + job.num
+      + shipping;
     await navigator.clipboard.writeText(msg);
     alert('Payment request copied to clipboard!');
   } catch(e) { alert('Error: ' + e.message); }
@@ -2184,11 +2186,7 @@ async function chargeViaSquare() {
   var note = 'Job #' + job.num + ' - ' + (job.customerName || '') + ' - ' + (job.device || '');
   var data = { amount_money: { amount: pence, currency_code: 'GBP' }, notes: note, client_id: appId, version: '1.3', callback_url: window.location.origin };
   var encoded = btoa(JSON.stringify(data));
-  var a = document.createElement('a');
-  a.href = 'square-commerce-v1://payment/create?data=' + encoded;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  window.open('square-commerce-v1://payment/create?data=' + encoded, '_blank');
 }
 
 async function sendPaymentLink() {
