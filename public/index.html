@@ -2125,6 +2125,7 @@ function renderJobDetail() {
     mkBtn('🏦 Transfer', '#3a3a2a', '#bfb44a', () => markJobPaid('Bank Transfer'));
     mkBtn('📲 Charge via Square', '#1a1a3a', '#7c6ff7', () => chargeViaSquare());
     mkBtn('🔗 Send Payment Link', '#1a2a3a', '#4a9fbf', () => sendPaymentLink());
+    mkBtn('📋 Copy Payment Request', '#1a2a2a', '#4abf8a', () => copyPaymentRequest());
   }
   const delBtn = document.createElement('button');
   delBtn.textContent = 'Delete';
@@ -2155,6 +2156,25 @@ async function advanceJobStatus(next) {
   } catch(e) { alert('Error updating status: ' + e.message); }
 }
 
+
+
+async function copyPaymentRequest() {
+  var job = jobs.find(function(j) { return j.id === selectedJobId; });
+  if (!job) return;
+  try {
+    var bank = await api('GET', '/api/bank');
+    var amount = (+job.quotedPrice || 0).toFixed(2);
+    var msg = 'Hi ' + (job.customerName || 'there') + ', your ' + (job.device || 'device') + ' repair is complete! '
+      + 'Total: \u00a3' + amount + '. '
+      + 'Please pay by bank transfer:\n'
+      + 'Sort code: ' + bank.sortCode + '\n'
+      + 'Account: ' + bank.account + '\n'
+      + 'Ref: Job #' + job.num + '\n\n'
+      + 'Once payment is received I\'ll get it shipped same day!';
+    await navigator.clipboard.writeText(msg);
+    alert('Payment request copied to clipboard!');
+  } catch(e) { alert('Error: ' + e.message); }
+}
 
 async function chargeViaSquare() {
   var job = jobs.find(function(j) { return j.id === selectedJobId; });

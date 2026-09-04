@@ -161,6 +161,15 @@ app.post('/api/square/payment-link', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+
+// ── Bank details ─────────────────────────────────────────
+app.get('/api/bank', (req, res) => {
+  res.json({
+    sortCode:  process.env.BANK_SORT_CODE  || '',
+    account:   process.env.BANK_ACCOUNT    || ''
+  });
+});
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Repair tracker running on http://0.0.0.0:${PORT}`);
 });
