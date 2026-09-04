@@ -82,6 +82,11 @@ if (!db.prepare("SELECT value FROM meta WHERE key='nextNum'").get()) {
 function boolify(row) {
   if (!row) return row;
   const r = { ...row };
+
+// Add new columns if they don't exist yet (safe on existing DBs)
+['dateReceived','datePostedBack'].forEach(col => {
+  try { db.prepare('ALTER TABLE jobs ADD COLUMN ' + col + ' TEXT').run(); } catch(e) {}
+});
   for (const k of ['listedEbay','listedVinted','listedFacebook','listedCEX','listedOther']) {
     r[k] = !!r[k];
   }
@@ -200,10 +205,6 @@ module.exports = {
   },
 
 
-  // Add new columns if they don't exist yet (safe on existing DBs)
-  ['dateReceived','datePostedBack'].forEach(col => {
-    try { db.prepare('ALTER TABLE jobs ADD COLUMN ' + col + ' TEXT').run(); } catch(e) {}
-  });
   // Used by seed script
   setCounter(n) {
     db.prepare("INSERT OR REPLACE INTO meta (key,value) VALUES ('nextNum',?)").run(String(n));
