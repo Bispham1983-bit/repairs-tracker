@@ -2035,9 +2035,14 @@ document.getElementById('search-box').addEventListener('input', e => {
     #jobs-detail-panel { display: none; width: 100%; }
     #jobs-detail-panel.mobile-show { display: block !important; }
     #job-btn-back { display: inline-block !important; }
-    #pnl-panel { width: 100% !important; }
-    #pnl-panel table { font-size: 0.72rem; }
-    #pnl-panel th, #pnl-panel td { padding: 3px 3px !important; }
+    #pnl-panel { width: 100% !important; padding: 10px 10px !important; }
+    #pnl-panel h2 { font-size: 1rem !important; }
+    #pnl-panel > div:first-child { margin-bottom: 10px !important; }
+    #pnl-summary { gap: 6px !important; margin-bottom: 10px !important; }
+    #pnl-summary > div { padding: 6px 8px !important; font-size: 0.78rem !important; min-width: unset !important; flex: 1 1 calc(50% - 6px) !important; }
+    #pnl-panel table { font-size: 0.7rem; width: 100%; }
+    #pnl-panel th, #pnl-panel td { padding: 3px 4px !important; }
+    #pnl-panel h3 { font-size: 0.85rem !important; margin: 10px 0 4px !important; }
   }
 </style>
 <script>
