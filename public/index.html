@@ -1889,7 +1889,7 @@ document.getElementById('search-box').addEventListener('input', e => {
 
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
         <div style="display:flex;align-items:center;gap:10px">
-          <button id="job-btn-back" onclick="document.getElementById('jobs-list-panel').classList.remove('hidden');document.getElementById('jobs-detail-panel').style.display='';" style="display:none;background:#444;border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px">← Back</button>
+          <button id="job-btn-back" onclick="document.getElementById('jobs-list-panel').classList.remove('hidden');document.getElementById('jobs-detail-panel').classList.remove('mobile-show');this.style.display='none';" style="display:none;background:#444;border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px">← Back</button>
           <div>
             <h2 id="jd-customer" style="margin:0;font-size:1.2rem"></h2>
             <div id="jd-sub" style="color:var(--muted);font-size:0.8rem;margin-top:2px"></div>
@@ -2023,9 +2023,15 @@ document.getElementById('search-box').addEventListener('input', e => {
   .job-row.selected { background: var(--selected); }
   .job-row-name { font-weight: 600; font-size: 0.9rem; }
   .job-row-sub { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
-  @media (max-width: 640px) {
-    #jobs-list-panel.hidden { display: none; }
+  @media (max-width: 700px) {
+    #jobs-list-panel { width: 100% !important; min-width: unset !important; border-right: none; }
+    #jobs-list-panel.hidden { display: none !important; }
+    #jobs-detail-panel { display: none; width: 100%; }
+    #jobs-detail-panel.mobile-show { display: block !important; }
     #job-btn-back { display: inline-block !important; }
+    #pnl-panel { width: 100% !important; }
+    #pnl-panel table { font-size: 0.72rem; }
+    #pnl-panel th, #pnl-panel td { padding: 3px 3px !important; }
   }
 </style>
 <script>
@@ -2105,8 +2111,8 @@ function selectJob(id) {
   renderJobList();
   renderJobDetail();
   if (window.innerWidth <= 700) {
-    document.getElementById('list-panel').classList.add('hidden');
-    document.getElementById('detail-panel').classList.add('mobile-show');
+    document.getElementById('jobs-list-panel').classList.add('hidden');
+    document.getElementById('jobs-detail-panel').classList.add('mobile-show');
   }
 }
 
