@@ -1839,11 +1839,10 @@ document.getElementById('search-box').addEventListener('input', e => {
     </div>
     <div style="display:flex;gap:4px;padding:6px 8px;border-bottom:1px solid #333;flex-wrap:wrap">
       <button class="job-filter-btn active" data-status="all">All</button>
-      <button class="job-filter-btn" data-status="Checked In">In</button>
+      <button class="job-filter-btn" data-status="Checked In">Checked In</button>
       <button class="job-filter-btn" data-status="In Progress">WIP</button>
       <button class="job-filter-btn" data-status="Ready">Ready</button>
-      <button class="job-filter-btn" data-status="Awaiting Collection">Collect</button>
-      <button class="job-filter-btn" data-status="Collected">Done</button>
+      <button class="job-filter-btn" data-status="Collected">Collected</button>
     </div>
     <div id="jobs-list" style="flex:1;overflow-y:auto"></div>
   </div>
@@ -1872,8 +1871,7 @@ document.getElementById('search-box').addEventListener('input', e => {
         <div class="field"><label>Date In</label><input type="date" data-jfield="dateIn"></div>
         <div class="field"><label>Status</label>
           <select data-jfield="status">
-            <option>Checked In</option><option>In Progress</option><option>Ready</option>
-            <option>Awaiting Collection</option><option>Collected</option>
+            <option>Checked In</option><option>In Progress</option><option>Ready</option><option>Collected</option>
           </select>
         </div>
         <div class="field"><label>Customer Name</label><input type="text" data-jfield="customerName" placeholder="Name"></div>
@@ -1887,22 +1885,20 @@ document.getElementById('search-box').addEventListener('input', e => {
       </div>
 
       <div class="field-section">Pricing</div>
-      <div class="field-grid two-col" style="margin-bottom:12px">
+      <div class="field-grid two-col" style="margin-bottom:8px">
         <div class="field"><label>Quoted Price (£)</label><input type="number" data-jfield="quotedPrice" min="0" step="0.01"></div>
         <div class="field"><label>Parts Cost (£)</label><input type="number" data-jfield="partsCost" min="0" step="0.01"></div>
-        <div class="field" style="display:flex;align-items:center;gap:8px;padding-top:18px">
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-            <input type="checkbox" data-jfield="mailIn"> Mail-in (+£3.95)
-          </label>
-        </div>
-        <div class="field" style="display:flex;align-items:center;gap:8px;padding-top:18px">
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-            <input type="checkbox" data-jfield="paid"> <span style="font-weight:600;color:var(--green)">Paid ✓</span>
-          </label>
-        </div>
-        <div class="field" style="display:flex;flex-direction:column;justify-content:flex-end">
-          <label>Job Profit</label>
-          <div id="jd-profit" style="font-size:1.2rem;font-weight:700;padding:4px 0">—</div>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--hover);border:1px solid var(--border);border-radius:8px;padding:8px 14px;user-select:none">
+          <input type="checkbox" data-jfield="mailIn" style="width:16px;height:16px"> <span>📬 Mail-in job (+£3.95)</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--hover);border:1px solid var(--border);border-radius:8px;padding:8px 14px;user-select:none">
+          <input type="checkbox" data-jfield="paid" style="width:16px;height:16px"> <span style="font-weight:600;color:var(--green)">💰 Paid</span>
+        </label>
+        <div style="margin-left:auto;text-align:right">
+          <div style="font-size:0.75rem;color:var(--muted)">Job Profit</div>
+          <div id="jd-profit" style="font-size:1.3rem;font-weight:700">—</div>
         </div>
       </div>
 
@@ -1999,10 +1995,10 @@ let jobPendingChanges = {};
 let jobFilter = 'all';
 let jobSearchQ = '';
 
-const JOB_STATUS_ORDER = ['Checked In','In Progress','Ready','Awaiting Collection','Collected'];
+const JOB_STATUS_ORDER = ['Checked In','In Progress','Ready','Collected'];
 
 function jobPillClass(status) {
-  const m = {'Checked In':'blue','In Progress':'amber','Ready':'green','Awaiting Collection':'purple','Collected':'grey'};
+  const m = {'Checked In':'blue','In Progress':'amber','Ready':'green','Collected':'grey'};
   return m[status] || '';
 }
 
@@ -2111,24 +2107,27 @@ function renderJobDetail() {
 }
 
 async function advanceJobStatus(next) {
-  const data = { status: next };
-  if (next === 'Collected') {
-    data.dateCompleted = data.dateCompleted || new Date().toISOString().slice(0,10);
-    // 3-month warranty
-    const d = new Date(); d.setMonth(d.getMonth() + 3);
-    data.warrantyExpires = d.toISOString().slice(0,10);
-  }
-  const updated = await api('PUT', '/api/jobs/' + selectedJobId, data);
-  mergeJob(updated);
-  renderJobList();
-  renderJobDetail();
+  try {
+    const data = { status: next };
+    if (next === 'Collected') {
+      data.dateCompleted = new Date().toISOString().slice(0,10);
+      const d = new Date(); d.setMonth(d.getMonth() + 3);
+      data.warrantyExpires = d.toISOString().slice(0,10);
+    }
+    const updated = await api('PUT', '/api/jobs/' + selectedJobId, data);
+    mergeJob(updated);
+    renderJobList();
+    renderJobDetail();
+  } catch(e) { alert('Error updating status: ' + e.message); }
 }
 
 async function markJobPaid() {
-  const updated = await api('PUT', '/api/jobs/' + selectedJobId, { paid: true });
-  mergeJob(updated);
-  renderJobList();
-  renderJobDetail();
+  try {
+    const updated = await api('PUT', '/api/jobs/' + selectedJobId, { paid: true });
+    mergeJob(updated);
+    renderJobList();
+    renderJobDetail();
+  } catch(e) { alert('Error marking paid: ' + e.message); }
 }
 
 async function deleteJob() {
