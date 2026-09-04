@@ -2181,9 +2181,7 @@ async function sendPaymentLink() {
     if (res.url) {
       var copied = false;
       try { await navigator.clipboard.writeText(res.url); copied = true; } catch(e) {}
-      alert((copied ? 'Link copied to clipboard!
-
-' : '') + res.url);
+      alert((copied ? 'Link copied to clipboard!\n\n' : '') + res.url);
     }
   } catch(e) {
     btn.textContent = '🔗 Send Payment Link'; btn.disabled = false;
