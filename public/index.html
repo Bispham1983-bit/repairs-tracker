@@ -1943,6 +1943,7 @@ document.getElementById('search-box').addEventListener('input', e => {
           <option value="">— Payment method —</option>
           <option value="Cash">💵 Cash</option>
           <option value="Card">💳 Card (Square)</option>
+          <option value="SumUp">💳 Card (SumUp)</option>
           <option value="Bank Transfer">🏦 Bank Transfer</option>
         </select>
         <div style="margin-left:auto;text-align:right">
@@ -2493,8 +2494,7 @@ function renderPnl() {
       + (sub ? '<div style="font-size:0.68rem;color:var(--muted);margin-top:1px">' + sub + '</div>' : '')
       + '</div>';
   }
-  var cardJobs = done.filter(function(j) { return j.paymentMethod === 'Card'; });
-  var squareFees = cardJobs.reduce(function(s,j) { return s + (+j.quotedPrice||0) * 0.0175; }, 0);
+  var squareFees = done.reduce(function(s,j) { return s + (+j.quotedPrice||0) * (j.paymentMethod === 'Card' ? 0.0175 : j.paymentMethod === 'SumUp' ? 0.0169 : 0); }, 0);
   var netProfit = totProfit - squareFees;
   document.getElementById('pnl-summary').innerHTML =
     card('Turnover', fmt(totRev), '', done.length + ' jobs') +
@@ -2512,7 +2512,7 @@ function renderPnl() {
     if (!byMonth[d]) byMonth[d] = { rev:0, parts:0, fees:0, count:0, mailIn:0 };
     byMonth[d].rev    += +j.quotedPrice || 0;
     byMonth[d].parts  += +j.partsCost   || 0;
-    byMonth[d].fees   += j.paymentMethod === 'Card' ? (+j.quotedPrice||0) * 0.0175 : 0;
+    byMonth[d].fees   += (+j.quotedPrice||0) * (j.paymentMethod === 'Card' ? 0.0175 : j.paymentMethod === 'SumUp' ? 0.0169 : 0);
     byMonth[d].count++;
     if (j.mailIn) byMonth[d].mailIn++;
   });
@@ -2545,7 +2545,7 @@ function renderPnl() {
 
   // Per-job list
   document.getElementById('pnl-tbody').innerHTML = done.slice().reverse().map(function(j) {
-    var rev = +j.quotedPrice||0, parts = +j.partsCost||0, sqFee = j.paymentMethod === 'Card' ? rev * 0.0175 : 0, profit = rev - parts - sqFee;
+    var rev = +j.quotedPrice||0, parts = +j.partsCost||0, sqFee = rev * (j.paymentMethod === 'Card' ? 0.0175 : j.paymentMethod === 'SumUp' ? 0.0169 : 0), profit = rev - parts - sqFee;
     return '<tr style="border-top:1px solid var(--border)">'
       + '<td style="padding:5px 6px;color:var(--muted)">' + j.num + '</td>'
       + '<td style="padding:5px 6px">' + (j.customerName||'') + '</td>'
