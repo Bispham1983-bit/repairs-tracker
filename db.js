@@ -41,6 +41,27 @@ db.exec(`
     updatedAt   TEXT    DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS jobs (
+    id              TEXT PRIMARY KEY,
+    num             INTEGER NOT NULL,
+    dateIn          TEXT,
+    customerName    TEXT,
+    customerContact TEXT,
+    device          TEXT,
+    faults          TEXT,
+    faultNotes      TEXT,
+    quotedPrice     REAL DEFAULT 0,
+    partsCost       REAL DEFAULT 0,
+    mailIn          INTEGER DEFAULT 0,
+    status          TEXT DEFAULT 'Checked In',
+    paid            INTEGER DEFAULT 0,
+    dateCompleted   TEXT,
+    warrantyExpires TEXT,
+    notes           TEXT,
+    createdAt       TEXT DEFAULT (datetime('now')),
+    updatedAt       TEXT DEFAULT (datetime('now'))
+  );
+
   CREATE TABLE IF NOT EXISTS meta (
     key   TEXT PRIMARY KEY,
     value TEXT
@@ -123,6 +144,55 @@ module.exports = {
     // Always use MAX(num)+1 so deletions don't leave gaps in the counter
     const row = db.prepare("SELECT COALESCE(MAX(num), 0) + 1 AS next FROM items").get();
     return row.next;
+  },
+
+  // ── Jobs ──────────────────────────────────────────────────
+  getAllJobs() {
+    return db.prepare('SELECT * FROM jobs ORDER BY num ASC').all().map(j => ({...j, paid: !!j.paid, mailIn: !!j.mailIn}));
+  },
+
+  getJob(id) {
+    const j = db.prepare('SELECT * FROM jobs WHERE id=?').get(id);
+    return j ? {...j, paid: !!j.paid, mailIn: !!j.mailIn} : null;
+  },
+
+  createJob(data) {
+    const num = db.prepare("SELECT COALESCE(MAX(num),0)+1 AS next FROM jobs").get().next;
+    const id  = 'job-' + String(num).padStart(3,'0');
+    const row = {
+      id, num,
+      dateIn:          data.dateIn          || new Date().toISOString().slice(0,10),
+      customerName:    data.customerName    || '',
+      customerContact: data.customerContact || '',
+      device:          data.device          || '',
+      faults:          data.faults          || '',
+      faultNotes:      data.faultNotes      || '',
+      quotedPrice:     data.quotedPrice     || 0,
+      partsCost:       data.partsCost       || 0,
+      mailIn:          data.mailIn          ? 1 : 0,
+      status:          data.status          || 'Checked In',
+      paid:            data.paid            ? 1 : 0,
+      dateCompleted:   data.dateCompleted   || null,
+      warrantyExpires: data.warrantyExpires || null,
+      notes:           data.notes           || '',
+    };
+    db.prepare(\`INSERT INTO jobs (id,num,dateIn,customerName,customerContact,device,faults,faultNotes,quotedPrice,partsCost,mailIn,status,paid,dateCompleted,warrantyExpires,notes)
+      VALUES (@id,@num,@dateIn,@customerName,@customerContact,@device,@faults,@faultNotes,@quotedPrice,@partsCost,@mailIn,@status,@paid,@dateCompleted,@warrantyExpires,@notes)\`).run(row);
+    return this.getJob(id);
+  },
+
+  updateJob(id, data) {
+    const allowed = ['dateIn','customerName','customerContact','device','faults','faultNotes','quotedPrice','partsCost','mailIn','status','paid','dateCompleted','warrantyExpires','notes'];
+    const row = {};
+    for (const k of allowed) { if (k in data) row[k] = (k === 'paid' || k === 'mailIn') ? (data[k] ? 1 : 0) : data[k]; }
+    if (!Object.keys(row).length) return this.getJob(id);
+    const sql = \`UPDATE jobs SET \${Object.keys(row).map(k => k+'=@'+k).join(',')}, updatedAt=datetime('now') WHERE id=@id\`;
+    db.prepare(sql).run({...row, id});
+    return this.getJob(id);
+  },
+
+  deleteJob(id) {
+    db.prepare('DELETE FROM jobs WHERE id=?').run(id);
   },
 
   // Used by seed script

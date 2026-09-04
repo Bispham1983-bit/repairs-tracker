@@ -78,6 +78,26 @@ app.delete('/api/items/:id', (req, res) => {
 });
 
 // ── Start ────────────────────────────────────────────────────────
+// ── Jobs API ─────────────────────────────────────────────
+app.get('/api/jobs', (req, res) => {
+  res.json(db.getAllJobs());
+});
+
+app.post('/api/jobs', (req, res) => {
+  const job = db.createJob(req.body);
+  res.json(job);
+});
+
+app.put('/api/jobs/:id', (req, res) => {
+  const job = db.updateJob(req.params.id, req.body);
+  res.json(job);
+});
+
+app.delete('/api/jobs/:id', (req, res) => {
+  db.deleteJob(req.params.id);
+  res.json({ ok: true });
+});
+
 app.listen(PORT, '127.0.0.1', () => {
   console.log(`Repair tracker running on http://127.0.0.1:${PORT}`);
 });
