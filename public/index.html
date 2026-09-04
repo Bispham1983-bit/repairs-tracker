@@ -2188,7 +2188,7 @@ async function chargeViaSquare() {
   var encoded = btoa(JSON.stringify(data));
   var isAndroid = /android/i.test(navigator.userAgent);
   var iosUrl     = 'square-commerce-v1://payment/create?data=' + encoded;
-  var androidUrl = 'intent://payment/create?data=' + encoded + '#Intent;scheme=square-commerce-v1;package=com.squareup;end';
+  var androidUrl = 'intent://payment/create?data=' + encoded + '#Intent;scheme=square-commerce-v1;package=com.squareup.pos;end';
   var url = isAndroid ? androidUrl : iosUrl;
   var overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center';
