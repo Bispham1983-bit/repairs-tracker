@@ -559,6 +559,37 @@
       .field.span2, .field.span-all { grid-column: 1; }
       #btn-back-mobile { display: inline-block !important; }
     }
+
+    /* ── Mobile responsive ──────────────────────────────── */
+    @media (max-width: 700px) {
+      #list-panel {
+        width: 100% !important;
+        border-right: none;
+      }
+      #detail-panel {
+        display: none;
+        width: 100%;
+      }
+      #detail-panel.mobile-show {
+        display: flex;
+        flex-direction: column;
+      }
+      #list-panel.hidden {
+        display: none;
+      }
+      #btn-back-mobile {
+        display: inline-block !important;
+      }
+      #pnl-panel {
+        width: 100% !important;
+      }
+      #pnl-panel table {
+        font-size: 0.75rem;
+      }
+      #pnl-panel th, #pnl-panel td {
+        padding: 4px 4px !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -634,7 +665,7 @@
       <!-- Header -->
       <div id="detail-header">
         <div style="flex:1;display:flex;align-items:center;gap:10px">
-          <button id="btn-back-mobile" onclick="document.getElementById('list-panel').classList.remove('hidden');document.getElementById('detail-panel').classList.remove('mobile-show');" style="display:none;background:#444;border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px;flex-shrink:0">← Back</button>
+          <button id="btn-back-mobile" onclick="document.getElementById('list-panel').classList.remove('hidden');document.getElementById('detail-panel').classList.remove('mobile-show');this.style.display='none';" style="display:none;background:#444;border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px;flex-shrink:0">← Back</button>
           <div>
             <h2 id="d-title">—</h2>
             <div class="sub" id="d-sub">—</div>
@@ -2073,8 +2104,9 @@ function selectJob(id) {
   }
   renderJobList();
   renderJobDetail();
-  if (window.innerWidth <= 640) {
-    document.getElementById('jobs-list-panel').classList.add('hidden');
+  if (window.innerWidth <= 700) {
+    document.getElementById('list-panel').classList.add('hidden');
+    document.getElementById('detail-panel').classList.add('mobile-show');
   }
 }
 
