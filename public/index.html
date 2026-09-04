@@ -572,7 +572,6 @@
   </div>
   <div style="display:flex;gap:6px;align-items:center">
     <button id="btn-add">+ Add Item</button>
-    <button id="btn-add-job" style="display:none">+ Add Job</button>
     <button id="btn-logout" onclick="location='/logout'">Logout</button>
   </div>
 </header>
@@ -1837,6 +1836,7 @@ document.getElementById('search-box').addEventListener('input', e => {
       <input id="job-search" type="search" placeholder="Search jobs…"
         style="width:100%;box-sizing:border-box;padding:7px 10px;border-radius:6px;border:1px solid #444;background:#1e1e2e;color:#e0e0e0;font-size:14px">
     </div>
+    <div style="padding:8px 10px;border-bottom:1px solid var(--border)"><button id="btn-add-job" style="width:100%;background:var(--accent);border:none;color:#fff;padding:8px;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.9rem">+ New Job</button></div>
     <div style="display:flex;gap:4px;padding:6px 8px;border-bottom:1px solid #333;flex-wrap:wrap">
       <button class="job-filter-btn active" data-status="all">All</button>
       <button class="job-filter-btn" data-status="Awaiting Item">Awaiting</button>
@@ -1847,6 +1847,7 @@ document.getElementById('search-box').addEventListener('input', e => {
       <button class="job-filter-btn" data-mailin="1" style="margin-left:4px">📬 Mail-in</button>
       <button id="btn-pnl" style="margin-left:auto;background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 12px;border-radius:6px;cursor:pointer;font-size:0.8rem">📊 P&amp;L</button>
     </div>
+    <div id="pnl-panel" style="display:none;background:var(--hover);border-bottom:1px solid var(--border);overflow-y:auto;max-height:50vh;padding:12px 12px 4px"><div id="pnl-summary" style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap"></div><table style="width:100%;font-size:0.78rem;border-collapse:collapse"><thead><tr style="text-align:left;color:var(--muted)"><th style="padding:3px 6px">#</th><th style="padding:3px 6px">Customer</th><th style="padding:3px 6px">Device</th><th style="padding:3px 6px">Date</th><th style="padding:3px 6px;text-align:right">Rev</th><th style="padding:3px 6px;text-align:right">Parts</th><th style="padding:3px 6px;text-align:right">Profit</th></tr></thead><tbody id="pnl-tbody"></tbody></table></div>
     <div id="jobs-list" style="flex:1;overflow-y:auto"></div>
   </div>
 
@@ -2411,9 +2412,10 @@ function switchView(view) {
   const isInventory = view === 'inventory';
   document.getElementById('main').style.display          = isInventory ? '' : 'none';
   document.getElementById('stats-bar').style.display     = isInventory ? '' : 'none';
+  document.getElementById('filter-bar').style.display     = isInventory ? '' : 'none';
   document.getElementById('jobs-view').style.display     = isInventory ? 'none' : 'flex';
   document.getElementById('btn-add').style.display       = isInventory ? '' : 'none';
-  document.getElementById('btn-add-job').style.display   = isInventory ? 'none' : '';
+  // btn-add-job is now inside jobs-view, always visible there
   document.getElementById('btn-view-inventory').classList.toggle('active', isInventory);
   document.getElementById('btn-view-jobs').classList.toggle('active', !isInventory);
   if (!isInventory && !jobs.length) loadJobs();
