@@ -2181,7 +2181,7 @@ async function copyPaymentRequest() {
 async function chargeViaSquare() {
   var job = jobs.find(function(j) { return j.id === selectedJobId; });
   if (!job) return;
-  var appId = 'sq0idp-rbTVH76pmt8Re5jpvSvXeQ';
+  var appId = 'sq0idp-OQXMBkASm_I64teDFOPF8g';
   var pence = Math.round((+job.quotedPrice || 0) * 100);
   var note = 'Job #' + job.num + ' - ' + (job.customerName || '') + ' - ' + (job.device || '');
   var data = { amount_money: { amount: pence, currency_code: 'GBP' }, notes: note, client_id: appId, version: '1.3', callback_url: window.location.origin };
