@@ -83,10 +83,6 @@ function boolify(row) {
   if (!row) return row;
   const r = { ...row };
 
-// Add new columns if they don't exist yet (safe on existing DBs)
-['dateReceived','datePostedBack'].forEach(col => {
-  try { db.prepare('ALTER TABLE jobs ADD COLUMN ' + col + ' TEXT').run(); } catch(e) {}
-});
   for (const k of ['listedEbay','listedVinted','listedFacebook','listedCEX','listedOther']) {
     r[k] = !!r[k];
   }
@@ -210,3 +206,9 @@ module.exports = {
     db.prepare("INSERT OR REPLACE INTO meta (key,value) VALUES ('nextNum',?)").run(String(n));
   },
 };
+
+// Add new columns if they don't exist yet (safe on existing DBs)
+['dateReceived','datePostedBack'].forEach(col => {
+  try { db.prepare('ALTER TABLE jobs ADD COLUMN ' + col + ' TEXT').run(); } catch(e) {}
+});
+
