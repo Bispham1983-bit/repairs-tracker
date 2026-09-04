@@ -2065,6 +2065,12 @@ function selectJob(id) {
   jobPendingChanges = {};
   hideJobSaveBar();
   selectedJobId = id;
+  // Close P&L if open
+  var pnlPanel = document.getElementById('pnl-panel');
+  if (pnlPanel && pnlPanel.style.display !== 'none') {
+    pnlPanel.style.display = 'none';
+    document.getElementById('job-no-selection').style.display = '';
+  }
   renderJobList();
   renderJobDetail();
   if (window.innerWidth <= 640) {
