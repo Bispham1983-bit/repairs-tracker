@@ -1847,13 +1847,13 @@ document.getElementById('search-box').addEventListener('input', e => {
       <button class="job-filter-btn" data-mailin="1" style="margin-left:4px">📬 Mail-in</button>
       <button id="btn-pnl" style="margin-left:auto;background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 12px;border-radius:6px;cursor:pointer;font-size:0.8rem">📊 P&amp;L</button>
     </div>
-    <div id="pnl-panel" style="display:none;background:var(--hover);border-bottom:1px solid var(--border);overflow-y:auto;max-height:55vh;padding:12px"><div id="pnl-summary" style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap"></div><div style="display:flex;gap:6px;margin-bottom:8px"><button id="pnl-tab-monthly" onclick="pnlSetTab('monthly')" style="font-size:0.78rem;padding:3px 10px;border-radius:5px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer">Monthly</button><button id="pnl-tab-jobs" onclick="pnlSetTab('jobs')" style="font-size:0.78rem;padding:3px 10px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer">Per Job</button></div><div id="pnl-monthly-view"><table style="width:100%;font-size:0.78rem;border-collapse:collapse"><thead><tr style="text-align:left;color:var(--muted)"><th style="padding:3px 6px">Month</th><th style="padding:3px 6px;text-align:center">Jobs</th><th style="padding:3px 6px;text-align:center">Mail-in</th><th style="padding:3px 6px;text-align:right">Revenue</th><th style="padding:3px 6px;text-align:right">Parts</th><th style="padding:3px 6px;text-align:right">Gross Profit</th></tr></thead><tbody id="pnl-monthly-tbody"></tbody></table></div><div id="pnl-jobs-view" style="display:none"><table style="width:100%;font-size:0.78rem;border-collapse:collapse"><thead><tr style="text-align:left;color:var(--muted)"><th style="padding:3px 6px">#</th><th style="padding:3px 6px">Customer</th><th style="padding:3px 6px">Device</th><th style="padding:3px 6px">Date</th><th style="padding:3px 6px;text-align:right">Revenue</th><th style="padding:3px 6px;text-align:right">Parts</th><th style="padding:3px 6px;text-align:right">Profit</th></tr></thead><tbody id="pnl-tbody"></tbody></table></div></div>
-    <div id="jobs-list" style="flex:1;overflow-y:auto"></div>
+        <div id="jobs-list" style="flex:1;overflow-y:auto"></div>
   </div>
 
   <!-- Jobs detail panel -->
   <div id="jobs-detail-panel" style="flex:1;overflow-y:auto;padding:16px 20px">
-    <div id="job-no-selection" style="color:var(--muted);margin-top:40px;text-align:center">Select a job to view details</div>
+<div id="pnl-panel" style="display:none;height:100%;overflow-y:auto;padding:20px 24px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><h2 style="margin:0;font-size:1.2rem">📊 Profit &amp; Loss</h2><button onclick="document.getElementById('btn-pnl').click()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 12px;border-radius:6px;cursor:pointer;font-size:0.8rem">✕ Close</button></div><div id="pnl-summary" style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap"></div><div style="display:flex;gap:6px;margin-bottom:12px"><button id="pnl-tab-monthly" onclick="pnlSetTab('monthly')" style="font-size:0.82rem;padding:5px 14px;border-radius:6px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer">Monthly</button><button id="pnl-tab-jobs" onclick="pnlSetTab('jobs')" style="font-size:0.82rem;padding:5px 14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer">Per Job</button></div><div id="pnl-monthly-view"><table style="width:100%;font-size:0.85rem;border-collapse:collapse"><thead><tr style="text-align:left;color:var(--muted);border-bottom:2px solid var(--border)"><th style="padding:6px 8px">Month</th><th style="padding:6px 8px;text-align:center">Jobs</th><th style="padding:6px 8px;text-align:center">Mail-in</th><th style="padding:6px 8px;text-align:right">Revenue</th><th style="padding:6px 8px;text-align:right">Parts Cost</th><th style="padding:6px 8px;text-align:right">Gross Profit</th></tr></thead><tbody id="pnl-monthly-tbody"></tbody></table></div><div id="pnl-jobs-view" style="display:none"><table style="width:100%;font-size:0.85rem;border-collapse:collapse"><thead><tr style="text-align:left;color:var(--muted);border-bottom:2px solid var(--border)"><th style="padding:6px 8px">#</th><th style="padding:6px 8px">Customer</th><th style="padding:6px 8px">Device</th><th style="padding:6px 8px">Date</th><th style="padding:6px 8px;text-align:right">Revenue</th><th style="padding:6px 8px;text-align:right">Parts</th><th style="padding:6px 8px;text-align:right">Profit</th></tr></thead><tbody id="pnl-tbody"></tbody></table></div></div>
+        <div id="job-no-selection" style="color:var(--muted);margin-top:40px;text-align:center">Select a job to view details</div>
     <div id="job-detail" style="display:none">
 
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
@@ -1902,6 +1902,12 @@ document.getElementById('search-box').addEventListener('input', e => {
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--hover);border:1px solid var(--border);border-radius:8px;padding:8px 14px;user-select:none">
           <input type="checkbox" data-jfield="paid" style="width:16px;height:16px"> <span style="font-weight:600;color:var(--green)">💰 Paid</span>
         </label>
+        <select data-jfield="paymentMethod" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--hover);color:var(--text);font-size:0.85rem;cursor:pointer">
+          <option value="">— Payment method —</option>
+          <option value="Cash">💵 Cash</option>
+          <option value="Card">💳 Card (Square)</option>
+          <option value="Bank Transfer">🏦 Bank Transfer</option>
+        </select>
         <div style="margin-left:auto;text-align:right">
           <div style="font-size:0.75rem;color:var(--muted)">Job Profit</div>
           <div id="jd-profit" style="font-size:1.3rem;font-weight:700">—</div>
@@ -2107,7 +2113,11 @@ function renderJobDetail() {
     const next = JOB_STATUS_ORDER[idx + 1];
     if (next) mkBtn('Mark: ' + next, 'var(--accent)', '#fff', () => advanceJobStatus(next));
   }
-  if (!job.paid) mkBtn('💰 Mark Paid', '#2a5c2a', '#6fbf4a', () => markJobPaid());
+  if (!job.paid) {
+    mkBtn('💵 Cash', '#2a5c2a', '#6fbf4a', () => markJobPaid('Cash'));
+    mkBtn('💳 Card', '#1a3c6a', '#4a9fbf', () => markJobPaid('Card'));
+    mkBtn('🏦 Transfer', '#3a3a2a', '#bfb44a', () => markJobPaid('Bank Transfer'));
+  }
   const delBtn = document.createElement('button');
   delBtn.textContent = 'Delete';
   delBtn.style.cssText = 'background:transparent;border:1px solid var(--subtle);color:var(--muted);padding:7px 12px;border-radius:6px;cursor:pointer;margin-left:auto';
@@ -2137,9 +2147,9 @@ async function advanceJobStatus(next) {
   } catch(e) { alert('Error updating status: ' + e.message); }
 }
 
-async function markJobPaid() {
+async function markJobPaid(method) {
   try {
-    const updated = await api('PUT', '/api/jobs/' + selectedJobId, { paid: true });
+    const updated = await api('PUT', '/api/jobs/' + selectedJobId, { paid: true, paymentMethod: method });
     mergeJob(updated);
     renderJobList();
     renderJobDetail();
@@ -2338,11 +2348,15 @@ function renderPnl() {
       + (sub ? '<div style="font-size:0.68rem;color:var(--muted);margin-top:1px">' + sub + '</div>' : '')
       + '</div>';
   }
+  var cardJobs = done.filter(function(j) { return j.paymentMethod === 'Card'; });
+  var squareFees = cardJobs.reduce(function(s,j) { return s + (+j.quotedPrice||0) * 0.0175; }, 0);
+  var netProfit = totProfit - squareFees;
   document.getElementById('pnl-summary').innerHTML =
     card('Turnover', fmt(totRev), '', done.length + ' jobs') +
     card('Cost of Parts', fmt(totParts)) +
-    card('Gross Profit', fmt(totProfit), totProfit >= 0 ? '#22c55e' : '#ef4444',
-         totRev > 0 ? Math.round(totProfit/totRev*100) + '% margin' : '') +
+    card('Square Fees', fmt(squareFees), '#ef4444', cardJobs.length + ' card jobs @ 1.75%') +
+    card('Net Profit', fmt(netProfit), netProfit >= 0 ? '#22c55e' : '#ef4444',
+         totRev > 0 ? Math.round(netProfit/totRev*100) + '% margin' : '') +
     card('Mail-in', mailInCount, '', fmt(mailInCount * 3.95) + ' surcharge');
 
   // Monthly breakdown
@@ -2389,6 +2403,7 @@ function renderPnl() {
       + '<td style="padding:5px 6px">' + (j.customerName||'') + '</td>'
       + '<td style="padding:5px 6px;color:var(--muted);font-size:0.75rem">' + (j.device||'') + '</td>'
       + '<td style="padding:5px 6px;color:var(--muted)">' + (j.dateCompleted||j.dateIn||'') + '</td>'
+      + '<td style="padding:5px 6px;color:var(--muted);font-size:0.75rem">' + (j.paymentMethod||'—') + '</td>'
       + '<td style="padding:5px 6px;text-align:right">' + fmt(rev) + '</td>'
       + '<td style="padding:5px 6px;text-align:right;color:var(--muted)">' + fmt(parts) + '</td>'
       + '<td style="padding:5px 6px;text-align:right;font-weight:600;color:' + (profit>=0?'#22c55e':'#ef4444') + '">' + fmt(profit) + '</td>'
@@ -2398,9 +2413,19 @@ function renderPnl() {
 
 document.getElementById('btn-pnl').addEventListener('click', function() {
   var panel = document.getElementById('pnl-panel');
+  var noSel  = document.getElementById('job-no-selection');
+  var detail = document.getElementById('job-detail');
   var visible = panel.style.display !== 'none';
-  panel.style.display = visible ? 'none' : 'block';
-  if (!visible) renderPnl();
+  if (visible) {
+    panel.style.display = 'none';
+    noSel.style.display = '';
+  } else {
+    panel.style.display = 'block';
+    noSel.style.display = 'none';
+    detail.style.display = 'none';
+    selectedJobId = null;
+    renderPnl();
+  }
 });
 
 
