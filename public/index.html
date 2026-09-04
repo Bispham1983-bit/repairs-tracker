@@ -2164,7 +2164,11 @@ async function chargeViaSquare() {
   var note = 'Job #' + job.num + ' - ' + (job.customerName || '') + ' - ' + (job.device || '');
   var data = { amount_money: { amount: pence, currency_code: 'GBP' }, notes: note, client_id: appId, version: '1.3', callback_url: window.location.origin };
   var encoded = btoa(JSON.stringify(data));
-  window.location.href = 'square-commerce-v1://payment/create?data=' + encoded;
+  var a = document.createElement('a');
+  a.href = 'square-commerce-v1://payment/create?data=' + encoded;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 async function sendPaymentLink() {
