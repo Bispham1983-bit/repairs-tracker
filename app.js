@@ -185,6 +185,7 @@ app.post('/api/sumup/payment-link', async (req, res) => {
       description: note || 'Repair Job',
       merchant_code: process.env.SUMUP_MERCHANT_CODE || ''
     }, token, 'api.sumup.com');
+    console.log("SumUp result:", JSON.stringify(result));
     if (result.id) {
       res.json({ url: 'https://pay.sumup.com/b2c/checkout/' + result.id });
     } else {
