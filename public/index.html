@@ -1918,8 +1918,8 @@ document.getElementById('search-box').addEventListener('input', e => {
 </div>
 
 <!-- Add Job Modal -->
-<div id="add-job-modal" class="modal-overlay hidden">
-  <div class="modal-box" style="max-width:520px">
+<div id="add-job-modal" class="modal-backdrop">
+  <div class="modal" style="max-width:520px">
     <h2 style="margin:0 0 16px">New Repair Job</h2>
     <div class="field-grid two-col">
       <div class="field"><label>Date In</label><input type="date" id="nj-datein"></div>
@@ -2220,12 +2220,27 @@ const FIRST_PRICE = 14.99, ADD_PRICE = 2.99, HALL_PRICE = 16.00, MAILIN_PRICE = 
 
 function calcJobPrice() {
   const checked = [...document.querySelectorAll('#nj-fault-area input[type=checkbox]:checked')];
-  let total = 0, count = 0, hasHall = false;
+  let total = 0, hasHall = false, nonHallCount = 0;
   checked.forEach(cb => {
-    if (cb.dataset.price === 'hall') { hasHall = true; total += HALL_PRICE; }
-    else if (count === 0) { total += FIRST_PRICE; count++; }
-    else { total += ADD_PRICE; count++; }
+    if (cb.dataset.price === 'hall') { hasHall = true; }
+    else { nonHallCount++; }
   });
+  if (hasHall) {
+    // Hall effect is the base service covering both sticks (£16)
+    // Left/right stick drift chips are auto-selected but don't add cost
+    total += HALL_PRICE;
+    checked.forEach(cb => {
+      if (cb.dataset.price !== 'hall' && cb.value !== 'Left stick drift' && cb.value !== 'Right stick drift') {
+        total += ADD_PRICE;
+      }
+    });
+  } else {
+    let count = 0;
+    checked.forEach(cb => {
+      if (count === 0) { total += FIRST_PRICE; count++; }
+      else { total += ADD_PRICE; count++; }
+    });
+  }
   if (document.getElementById('nj-mailin').checked) total += MAILIN_PRICE;
   document.getElementById('nj-quoted').value = total > 0 ? total.toFixed(2) : '';
   document.getElementById('nj-price-hint').textContent = total > 0 ? `(auto: £${total.toFixed(2)})` : '';
@@ -2234,6 +2249,15 @@ function calcJobPrice() {
 document.getElementById('nj-fault-area').addEventListener('change', e => {
   const chip = e.target.closest('.fault-chip');
   if (chip) chip.classList.toggle('checked', e.target.checked);
+  // Hall effect auto-selects both stick drift chips
+  if (e.target.dataset.price === 'hall') {
+    document.querySelectorAll('#nj-fault-area input[type=checkbox]').forEach(cb => {
+      if (cb.value === 'Left stick drift' || cb.value === 'Right stick drift') {
+        cb.checked = e.target.checked;
+        cb.closest('.fault-chip').classList.toggle('checked', e.target.checked);
+      }
+    });
+  }
   calcJobPrice();
 });
 document.getElementById('nj-mailin').addEventListener('change', calcJobPrice);
@@ -2254,9 +2278,16 @@ document.getElementById('btn-add-job').addEventListener('click', () => {
   openModal('add-job-modal');
 });
 
-document.getElementById('nj-cancel').addEventListener('click', () => closeModal('add-job-modal'));
+document.getElementById('nj-cancel').addEventListener('click', () => {
+  const btn = document.getElementById('nj-confirm');
+  btn.disabled = false; btn.textContent = 'Create Job';
+  closeModal('add-job-modal');
+});
 
 document.getElementById('nj-confirm').addEventListener('click', async () => {
+  const btn = document.getElementById('nj-confirm');
+  if (btn.disabled) return;
+  btn.disabled = true; btn.textContent = 'Creating…';
   const name = document.getElementById('nj-name').value.trim();
   if (!name) { alert('Customer name is required.'); return; }
   const faults = [...document.querySelectorAll('#nj-fault-area input[type=checkbox]:checked')]
@@ -2272,11 +2303,17 @@ document.getElementById('nj-confirm').addEventListener('click', async () => {
     mailIn:          document.getElementById('nj-mailin').checked,
     status:          'Checked In',
   };
-  const job = await api('POST', '/api/jobs', data);
-  jobs.push(job);
-  closeModal('add-job-modal');
-  renderJobList();
-  selectJob(job.id);
+  try {
+    const job = await api('POST', '/api/jobs', data);
+    jobs.push(job);
+    closeModal('add-job-modal');
+    btn.disabled = false; btn.textContent = 'Create Job';
+    renderJobList();
+    selectJob(job.id);
+  } catch(e) {
+    alert('Failed to create job: ' + e.message);
+    btn.disabled = false; btn.textContent = 'Create Job';
+  }
 });
 
 // ── View switching ────────────────────────────────────────
