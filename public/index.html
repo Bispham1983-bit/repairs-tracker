@@ -1852,7 +1852,7 @@ document.getElementById('search-box').addEventListener('input', e => {
 
   <!-- Jobs detail panel -->
   <div id="jobs-detail-panel" style="flex:1;overflow-y:auto;padding:16px 20px">
-<div id="pnl-panel" style="display:none;height:100%;overflow-y:auto;padding:20px 24px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><h2 style="margin:0;font-size:1.2rem">📊 Profit &amp; Loss</h2><button onclick="document.getElementById('btn-pnl').click()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 12px;border-radius:6px;cursor:pointer;font-size:0.8rem">✕ Close</button></div><div id="pnl-summary" style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap"></div><div style="display:flex;gap:6px;margin-bottom:12px"><button id="pnl-tab-monthly" onclick="pnlSetTab('monthly')" style="font-size:0.82rem;padding:5px 14px;border-radius:6px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer">Monthly</button><button id="pnl-tab-jobs" onclick="pnlSetTab('jobs')" style="font-size:0.82rem;padding:5px 14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer">Per Job</button></div><div id="pnl-monthly-view"><table style="width:100%;font-size:0.85rem;border-collapse:collapse"><thead><tr style="text-align:left;color:var(--muted);border-bottom:2px solid var(--border)"><th style="padding:6px 8px">Month</th><th style="padding:6px 8px;text-align:center">Jobs</th><th style="padding:6px 8px;text-align:center">Mail-in</th><th style="padding:6px 8px;text-align:right">Revenue</th><th style="padding:6px 8px;text-align:right">Parts Cost</th><th style="padding:6px 8px;text-align:right">Sq. Fees</th><th style="padding:6px 8px;text-align:right">Net Profit</th></tr></thead><tbody id="pnl-monthly-tbody"></tbody></table></div><div id="pnl-jobs-view" style="display:none"><table style="width:100%;font-size:0.85rem;border-collapse:collapse"><thead><tr style="text-align:left;color:var(--muted);border-bottom:2px solid var(--border)"><th style="padding:6px 8px">#</th><th style="padding:6px 8px">Customer</th><th style="padding:6px 8px">Device</th><th style="padding:6px 8px">Date</th><th style="padding:6px 8px">Payment</th><th style="padding:6px 8px;text-align:right">Revenue</th><th style="padding:6px 8px;text-align:right">Parts</th><th style="padding:6px 8px;text-align:right">Profit</th></tr></thead><tbody id="pnl-tbody"></tbody></table></div></div>
+<div id="pnl-panel" style="display:none;height:100%;overflow-y:auto;padding:20px 24px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><h2 style="margin:0;font-size:1.2rem">📊 Profit &amp; Loss</h2><button onclick="document.getElementById('btn-pnl').click()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 12px;border-radius:6px;cursor:pointer;font-size:0.8rem">✕ Close</button></div><div id="pnl-summary" style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap"></div><div style="display:flex;gap:6px;margin-bottom:12px"><button id="pnl-tab-monthly" onclick="pnlSetTab('monthly')" style="font-size:0.82rem;padding:5px 14px;border-radius:6px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer">Monthly</button><button id="pnl-tab-jobs" onclick="pnlSetTab('jobs')" style="font-size:0.82rem;padding:5px 14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer">Per Job</button></div><div id="pnl-monthly-view"><table style="width:100%;font-size:0.85rem;border-collapse:collapse"><thead><tr style="text-align:left;color:var(--muted);border-bottom:2px solid var(--border)"><th style="padding:6px 8px">Month</th><th style="padding:6px 8px;text-align:center">Jobs</th><th style="padding:6px 8px;text-align:center">Mail-in</th><th style="padding:6px 8px;text-align:right">Revenue</th><th style="padding:6px 8px;text-align:right">Parts Cost</th><th style="padding:6px 8px;text-align:right">Fees</th><th style="padding:6px 8px;text-align:right">Net Profit</th></tr></thead><tbody id="pnl-monthly-tbody"></tbody></table></div><div id="pnl-jobs-view" style="display:none"><table style="width:100%;font-size:0.85rem;border-collapse:collapse"><thead><tr style="text-align:left;color:var(--muted);border-bottom:2px solid var(--border)"><th style="padding:6px 8px">#</th><th style="padding:6px 8px">Customer</th><th style="padding:6px 8px">Device</th><th style="padding:6px 8px">Date</th><th style="padding:6px 8px">Payment</th><th style="padding:6px 8px;text-align:right">Revenue</th><th style="padding:6px 8px;text-align:right">Parts</th><th style="padding:6px 8px;text-align:right">Profit</th></tr></thead><tbody id="pnl-tbody"></tbody></table></div></div>
         <div id="job-no-selection" style="color:var(--muted);margin-top:40px;text-align:center">Select a job to view details</div>
     <div id="job-detail" style="display:none">
 
@@ -2354,7 +2354,7 @@ function renderPnl() {
   document.getElementById('pnl-summary').innerHTML =
     card('Turnover', fmt(totRev), '', done.length + ' jobs') +
     card('Cost of Parts', fmt(totParts)) +
-    card('Square Fees', fmt(squareFees), '#ef4444', cardJobs.length + ' card jobs @ 1.75%') +
+    card('Fees', fmt(squareFees), '#ef4444', cardJobs.length + ' card jobs @ 1.75%') +
     card('Net Profit', fmt(netProfit), netProfit >= 0 ? '#22c55e' : '#ef4444',
          totRev > 0 ? Math.round(netProfit/totRev*100) + '% margin' : '') +
     card('Mail-in', mailInCount, '', fmt(mailInCount * 3.95) + ' surcharge');
@@ -2364,9 +2364,10 @@ function renderPnl() {
   done.forEach(function(j) {
     var d = (j.dateCompleted || j.dateIn || '').slice(0, 7);
     if (!d) d = 'Unknown';
-    if (!byMonth[d]) byMonth[d] = { rev:0, parts:0, count:0, mailIn:0 };
+    if (!byMonth[d]) byMonth[d] = { rev:0, parts:0, fees:0, count:0, mailIn:0 };
     byMonth[d].rev    += +j.quotedPrice || 0;
     byMonth[d].parts  += +j.partsCost   || 0;
+    byMonth[d].fees   += j.paymentMethod === 'Card' ? (+j.quotedPrice||0) * 0.0175 : 0;
     byMonth[d].count++;
     if (j.mailIn) byMonth[d].mailIn++;
   });
@@ -2378,14 +2379,14 @@ function renderPnl() {
     return names[+parts[1]] + ' ' + parts[0];
   }
   document.getElementById('pnl-monthly-tbody').innerHTML = months.map(function(m) {
-    var r = byMonth[m], netP = r.rev - r.parts - r.squareFees;
+    var r = byMonth[m], netP = r.rev - r.parts - r.fees;
     return '<tr style="border-top:1px solid var(--border)">'
       + '<td style="padding:5px 6px;font-weight:500">' + fmtMonth(m) + '</td>'
       + '<td style="padding:5px 6px;text-align:center;color:var(--muted)">' + r.count + '</td>'
       + '<td style="padding:5px 6px;text-align:center;color:var(--muted)">' + (r.mailIn||'—') + '</td>'
       + '<td style="padding:5px 6px;text-align:right">' + fmt(r.rev) + '</td>'
       + '<td style="padding:5px 6px;text-align:right;color:var(--muted)">' + fmt(r.parts) + '</td>'
-      + '<td style="padding:5px 6px;text-align:right;color:#ef4444">' + fmt(r.squareFees) + '</td>'
+      + '<td style="padding:5px 6px;text-align:right;color:#ef4444">' + fmt(r.fees) + '</td>'
       + '<td style="padding:5px 6px;text-align:right;font-weight:600;color:' + (netP>=0?'#22c55e':'#ef4444') + '">' + fmt(netP) + '</td>'
       + '</tr>';
   }).join('') +
