@@ -1843,6 +1843,7 @@ document.getElementById('search-box').addEventListener('input', e => {
       <button class="job-filter-btn" data-status="In Progress">WIP</button>
       <button class="job-filter-btn" data-status="Ready">Ready</button>
       <button class="job-filter-btn" data-status="Collected">Collected</button>
+      <button class="job-filter-btn" data-mailin="1" style="margin-left:4px">📬 Mail-in</button>
     </div>
     <div id="jobs-list" style="flex:1;overflow-y:auto"></div>
   </div>
@@ -1882,6 +1883,8 @@ document.getElementById('search-box').addEventListener('input', e => {
         <div class="field span-all"><label>Repair Notes</label><textarea data-jfield="notes" rows="2" placeholder="What was done, parts used…"></textarea></div>
         <div class="field"><label>Date Completed</label><input type="date" data-jfield="dateCompleted"></div>
         <div class="field"><label>Warranty Expires</label><input type="date" data-jfield="warrantyExpires" readonly style="opacity:0.6"></div>
+        <div class="field mailin-only" style="display:none"><label>📬 Item Received at Shop</label><input type="date" data-jfield="dateReceived"></div>
+        <div class="field mailin-only" style="display:none"><label>📦 Posted Back to Customer</label><input type="date" data-jfield="datePostedBack"></div>
       </div>
 
       <div class="field-section">Pricing</div>
@@ -2008,7 +2011,9 @@ async function loadJobs() {
 }
 
 function filteredJobs() {
-  let list = jobFilter === 'all' ? jobs : jobs.filter(j => j.status === jobFilter);
+  let list = jobFilter === 'all' ? jobs
+    : jobFilter === '__mailin__' ? jobs.filter(j => j.mailIn)
+    : jobs.filter(j => j.status === jobFilter);
   if (jobSearchQ) {
     const q = jobSearchQ;
     list = list.filter(j =>
@@ -2102,6 +2107,11 @@ function renderJobDetail() {
   delBtn.style.cssText = 'background:transparent;border:1px solid var(--subtle);color:var(--muted);padding:7px 12px;border-radius:6px;cursor:pointer;margin-left:auto';
   delBtn.onclick = deleteJob;
   bar.appendChild(delBtn);
+
+  // Show/hide mail-in tracking fields
+  document.querySelectorAll('.mailin-only').forEach(el => {
+    el.style.display = job.mailIn ? '' : 'none';
+  });
 
   updateJobProfit(job);
 }
@@ -2201,7 +2211,11 @@ document.querySelectorAll('.job-filter-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.job-filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    jobFilter = btn.dataset.status;
+    if (btn.dataset.mailin) {
+      jobFilter = '__mailin__';
+    } else {
+      jobFilter = btn.dataset.status;
+    }
     renderJobList();
   });
 });

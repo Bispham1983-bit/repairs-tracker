@@ -57,6 +57,8 @@ db.exec(`
     paid            INTEGER DEFAULT 0,
     dateCompleted   TEXT,
     warrantyExpires TEXT,
+    dateReceived    TEXT,
+    datePostedBack  TEXT,
     notes           TEXT,
     createdAt       TEXT DEFAULT (datetime('now')),
     updatedAt       TEXT DEFAULT (datetime('now'))
@@ -174,19 +176,21 @@ module.exports = {
       paid:            data.paid            ? 1 : 0,
       dateCompleted:   data.dateCompleted   || null,
       warrantyExpires: data.warrantyExpires || null,
+      dateReceived:    data.dateReceived    || null,
+      datePostedBack:  data.datePostedBack  || null,
       notes:           data.notes           || '',
     };
-    db.prepare(`INSERT INTO jobs (id,num,dateIn,customerName,customerContact,device,faults,faultNotes,quotedPrice,partsCost,mailIn,status,paid,dateCompleted,warrantyExpires,notes)
-      VALUES (@id,@num,@dateIn,@customerName,@customerContact,@device,@faults,@faultNotes,@quotedPrice,@partsCost,@mailIn,@status,@paid,@dateCompleted,@warrantyExpires,@notes)`).run(row);
+    db.prepare(`INSERT INTO jobs (id,num,dateIn,customerName,customerContact,device,faults,faultNotes,quotedPrice,partsCost,mailIn,status,paid,dateCompleted,warrantyExpires,dateReceived,datePostedBack,notes)
+      VALUES (@id,@num,@dateIn,@customerName,@customerContact,@device,@faults,@faultNotes,@quotedPrice,@partsCost,@mailIn,@status,@paid,@dateCompleted,@warrantyExpires,@dateReceived,@datePostedBack,@notes)`).run(row);
     return this.getJob(id);
   },
 
   updateJob(id, data) {
-    const allowed = ['dateIn','customerName','customerContact','device','faults','faultNotes','quotedPrice','partsCost','mailIn','status','paid','dateCompleted','warrantyExpires','notes'];
+    const allowed = ['dateIn','customerName','customerContact','device','faults','faultNotes','quotedPrice','partsCost','mailIn','status','paid','dateCompleted','warrantyExpires','dateReceived','datePostedBack','notes'];
     const row = {};
     for (const k of allowed) { if (k in data) row[k] = (k === 'paid' || k === 'mailIn') ? (data[k] ? 1 : 0) : data[k]; }
     if (!Object.keys(row).length) return this.getJob(id);
-    const sql = `UPDATE jobs SET \${Object.keys(row).map(k => k+'=@'+k).join(',')}, updatedAt=datetime('now') WHERE id=@id`;
+    const sql = 'UPDATE jobs SET ' + Object.keys(row).map(k => k+'=@'+k).join(',') + ", updatedAt=datetime('now') WHERE id=@id";
     db.prepare(sql).run({...row, id});
     return this.getJob(id);
   },
@@ -195,6 +199,11 @@ module.exports = {
     db.prepare('DELETE FROM jobs WHERE id=?').run(id);
   },
 
+
+  // Add new columns if they don't exist yet (safe on existing DBs)
+  ['dateReceived','datePostedBack'].forEach(col => {
+    try { db.prepare('ALTER TABLE jobs ADD COLUMN ' + col + ' TEXT').run(); } catch(e) {}
+  });
   // Used by seed script
   setCounter(n) {
     db.prepare("INSERT OR REPLACE INTO meta (key,value) VALUES ('nextNum',?)").run(String(n));
