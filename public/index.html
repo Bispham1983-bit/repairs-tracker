@@ -2123,6 +2123,8 @@ function renderJobDetail() {
     mkBtn('💵 Cash', '#2a5c2a', '#6fbf4a', () => markJobPaid('Cash'));
     mkBtn('💳 Card', '#1a3c6a', '#4a9fbf', () => markJobPaid('Card'));
     mkBtn('🏦 Transfer', '#3a3a2a', '#bfb44a', () => markJobPaid('Bank Transfer'));
+    mkBtn('📲 Charge via Square', '#1a1a3a', '#7c6ff7', () => chargeViaSquare());
+    mkBtn('🔗 Send Payment Link', '#1a2a3a', '#4a9fbf', () => sendPaymentLink());
   }
   const delBtn = document.createElement('button');
   delBtn.textContent = 'Delete';
@@ -2151,6 +2153,42 @@ async function advanceJobStatus(next) {
     renderJobList();
     renderJobDetail();
   } catch(e) { alert('Error updating status: ' + e.message); }
+}
+
+
+async function chargeViaSquare() {
+  var job = jobs.find(function(j) { return j.id === selectedJobId; });
+  if (!job) return;
+  var appId = 'sq0idp-rbTVH76pmt8Re5jpvSvXeQ';
+  var pence = Math.round((+job.quotedPrice || 0) * 100);
+  var note = 'Job #' + job.num + ' - ' + (job.customerName || '') + ' - ' + (job.device || '');
+  var data = { amount_money: { amount: pence, currency_code: 'GBP' }, notes: note, client_id: appId, version: '1.3', callback_url: window.location.origin };
+  var encoded = btoa(JSON.stringify(data));
+  window.location.href = 'square-commerce-v1://payment/create?data=' + encoded;
+}
+
+async function sendPaymentLink() {
+  var job = jobs.find(function(j) { return j.id === selectedJobId; });
+  if (!job || !job.quotedPrice) return alert('No quoted price on this job.');
+  var btn = event.target;
+  btn.textContent = 'Generating…'; btn.disabled = true;
+  try {
+    var res = await api('POST', '/api/square/payment-link', {
+      amount: job.quotedPrice,
+      note: 'Job #' + job.num + ' - ' + (job.customerName || '') + ' - ' + (job.device || '')
+    });
+    btn.textContent = '🔗 Send Payment Link'; btn.disabled = false;
+    if (res.url) {
+      var copied = false;
+      try { await navigator.clipboard.writeText(res.url); copied = true; } catch(e) {}
+      alert((copied ? 'Link copied to clipboard!
+
+' : '') + res.url);
+    }
+  } catch(e) {
+    btn.textContent = '🔗 Send Payment Link'; btn.disabled = false;
+    alert('Error: ' + e.message);
+  }
 }
 
 async function markJobPaid(method) {

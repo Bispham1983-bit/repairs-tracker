@@ -98,6 +98,69 @@ app.delete('/api/jobs/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+
+// ── Square ───────────────────────────────────────────────
+const https = require('https');
+
+function squareRequest(method, endpoint, body, token) {
+  return new Promise((resolve, reject) => {
+    const data = body ? JSON.stringify(body) : null;
+    const req = https.request({
+      hostname: 'connect.squareup.com',
+      path: endpoint,
+      method,
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json',
+        'Square-Version': '2024-01-18',
+        ...(data ? { 'Content-Length': Buffer.byteLength(data) } : {})
+      }
+    }, res => {
+      let raw = '';
+      res.on('data', d => raw += d);
+      res.on('end', () => {
+        try { resolve(JSON.parse(raw)); } catch(e) { resolve(raw); }
+      });
+    });
+    req.on('error', reject);
+    if (data) req.write(data);
+    req.end();
+  });
+}
+
+// Get first Square location ID (cached)
+let squareLocationId = null;
+async function getLocationId(token) {
+  if (squareLocationId) return squareLocationId;
+  const res = await squareRequest('GET', '/v2/locations', null, token);
+  squareLocationId = res.locations && res.locations[0] && res.locations[0].id;
+  return squareLocationId;
+}
+
+app.post('/api/square/payment-link', async (req, res) => {
+  const token = process.env.SQUARE_ACCESS_TOKEN;
+  if (!token) return res.status(500).json({ error: 'Square not configured' });
+  try {
+    const { amount, note } = req.body;
+    const locationId = await getLocationId(token);
+    if (!locationId) return res.status(500).json({ error: 'No Square location found' });
+    const pence = Math.round(parseFloat(amount) * 100);
+    const result = await squareRequest('POST', '/v2/online-checkout/payment-links', {
+      idempotency_key: Date.now() + '-' + Math.random().toString(36).slice(2),
+      quick_pay: {
+        name: note || 'Repair Job',
+        price_money: { amount: pence, currency: 'GBP' },
+        location_id: locationId
+      }
+    }, token);
+    if (result.payment_link) {
+      res.json({ url: result.payment_link.url });
+    } else {
+      res.status(500).json({ error: JSON.stringify(result.errors || result) });
+    }
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Repair tracker running on http://0.0.0.0:${PORT}`);
 });
