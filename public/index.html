@@ -2186,8 +2186,10 @@ async function chargeViaSquare() {
   var note = 'Job #' + job.num + ' - ' + (job.customerName || '') + ' - ' + (job.device || '');
   var data = { amount_money: { amount: pence, currency_code: 'GBP' }, notes: note, client_id: appId, version: '1.3', callback_url: window.location.origin };
   var encoded = btoa(JSON.stringify(data));
-  var url = 'square-commerce-v1://payment/create?data=' + encoded;
-  // Show tappable overlay — programmatic deep links are blocked on mobile
+  var isAndroid = /android/i.test(navigator.userAgent);
+  var iosUrl     = 'square-commerce-v1://payment/create?data=' + encoded;
+  var androidUrl = 'intent://payment/create?data=' + encoded + '#Intent;scheme=square-commerce-v1;package=com.squareup;end';
+  var url = isAndroid ? androidUrl : iosUrl;
   var overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center';
   overlay.innerHTML = '<div style="background:#1a1d27;border:1px solid #2d3148;border-radius:12px;padding:24px;text-align:center;max-width:300px">'
