@@ -176,8 +176,8 @@ module.exports = {
       warrantyExpires: data.warrantyExpires || null,
       notes:           data.notes           || '',
     };
-    db.prepare(\`INSERT INTO jobs (id,num,dateIn,customerName,customerContact,device,faults,faultNotes,quotedPrice,partsCost,mailIn,status,paid,dateCompleted,warrantyExpires,notes)
-      VALUES (@id,@num,@dateIn,@customerName,@customerContact,@device,@faults,@faultNotes,@quotedPrice,@partsCost,@mailIn,@status,@paid,@dateCompleted,@warrantyExpires,@notes)\`).run(row);
+    db.prepare(`INSERT INTO jobs (id,num,dateIn,customerName,customerContact,device,faults,faultNotes,quotedPrice,partsCost,mailIn,status,paid,dateCompleted,warrantyExpires,notes)
+      VALUES (@id,@num,@dateIn,@customerName,@customerContact,@device,@faults,@faultNotes,@quotedPrice,@partsCost,@mailIn,@status,@paid,@dateCompleted,@warrantyExpires,@notes)`).run(row);
     return this.getJob(id);
   },
 
@@ -186,7 +186,7 @@ module.exports = {
     const row = {};
     for (const k of allowed) { if (k in data) row[k] = (k === 'paid' || k === 'mailIn') ? (data[k] ? 1 : 0) : data[k]; }
     if (!Object.keys(row).length) return this.getJob(id);
-    const sql = \`UPDATE jobs SET \${Object.keys(row).map(k => k+'=@'+k).join(',')}, updatedAt=datetime('now') WHERE id=@id\`;
+    const sql = `UPDATE jobs SET \${Object.keys(row).map(k => k+'=@'+k).join(',')}, updatedAt=datetime('now') WHERE id=@id`;
     db.prepare(sql).run({...row, id});
     return this.getJob(id);
   },
