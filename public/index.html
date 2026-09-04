@@ -562,6 +562,12 @@
 
     /* ── Mobile responsive ──────────────────────────────── */
     @media (max-width: 700px) {
+      header { flex-wrap: wrap; padding: 6px 10px; gap: 4px; }
+      header h1 { font-size: 0.85rem; flex: 1; }
+      header > div { flex-shrink: 0; }
+      #btn-logout { font-size: 0.75rem; padding: 4px 8px; }
+      #btn-add { font-size: 0.75rem; padding: 4px 8px; }
+      .view-btn { font-size: 0.75rem; padding: 4px 8px; }
       #list-panel {
         width: 100% !important;
         border-right: none;
@@ -2553,16 +2559,26 @@ document.getElementById('btn-pnl').addEventListener('click', function() {
   var panel = document.getElementById('pnl-panel');
   var noSel  = document.getElementById('job-no-selection');
   var detail = document.getElementById('job-detail');
+  var listP  = document.getElementById('jobs-list-panel');
+  var detailP = document.getElementById('jobs-detail-panel');
   var visible = panel.style.display !== 'none';
   if (visible) {
     panel.style.display = 'none';
     noSel.style.display = '';
+    if (window.innerWidth <= 700) {
+      listP.classList.remove('hidden');
+      detailP.classList.remove('mobile-show');
+    }
   } else {
     panel.style.display = 'block';
     noSel.style.display = 'none';
     detail.style.display = 'none';
     selectedJobId = null;
     renderPnl();
+    if (window.innerWidth <= 700) {
+      listP.classList.add('hidden');
+      detailP.classList.add('mobile-show');
+    }
   }
 });
 
