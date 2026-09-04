@@ -1845,6 +1845,7 @@ document.getElementById('search-box').addEventListener('input', e => {
       <button class="job-filter-btn" data-status="Ready">Ready</button>
       <button class="job-filter-btn" data-status="Collected">Collected</button>
       <button class="job-filter-btn" data-mailin="1" style="margin-left:4px">📬 Mail-in</button>
+      <button id="btn-pnl" style="margin-left:auto;background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 12px;border-radius:6px;cursor:pointer;font-size:0.8rem">📊 P&amp;L</button>
     </div>
     <div id="jobs-list" style="flex:1;overflow-y:auto"></div>
   </div>
@@ -1930,15 +1931,16 @@ document.getElementById('search-box').addEventListener('input', e => {
 
     <div class="field-section" style="margin-top:12px">Select Faults</div>
     <div id="nj-fault-area" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
-      <label class="fault-chip nj-fault"><input type="checkbox" value="Left stick drift" data-price="first"><span>Left stick drift</span></label>
-      <label class="fault-chip nj-fault"><input type="checkbox" value="Right stick drift" data-price="add"><span>Right stick drift</span></label>
-      <label class="fault-chip nj-fault"><input type="checkbox" value="Left stick needs replacing" data-price="first"><span>Left stick replacing</span></label>
-      <label class="fault-chip nj-fault"><input type="checkbox" value="Right stick needs replacing" data-price="add"><span>Right stick replacing</span></label>
-      <label class="fault-chip nj-fault"><input type="checkbox" value="Hall effect upgrade (both sticks)" data-price="hall"><span>⚡ Hall effect upgrade</span></label>
+      <label class="fault-chip nj-fault"><input type="checkbox" value="Left stick drift" data-price="first" data-parts="1.00"><span>Left stick drift</span></label>
+      <label class="fault-chip nj-fault"><input type="checkbox" value="Right stick drift" data-price="add" data-parts="1.00"><span>Right stick drift</span></label>
+      <label class="fault-chip nj-fault"><input type="checkbox" value="Left stick needs replacing" data-price="first" data-parts="1.00"><span>Left stick replacing</span></label>
+      <label class="fault-chip nj-fault"><input type="checkbox" value="Right stick needs replacing" data-price="add" data-parts="1.00"><span>Right stick replacing</span></label>
+      <label class="fault-chip nj-fault"><input type="checkbox" value="Left TMR upgrade" data-price="hall" data-parts="5.50"><span>⚡ Left TMR</span></label>
+      <label class="fault-chip nj-fault"><input type="checkbox" value="Right TMR upgrade" data-price="hall" data-parts="5.50"><span>⚡ Right TMR</span></label>
       <label class="fault-chip nj-fault"><input type="checkbox" value="LT not working" data-price="first"><span>LT not working</span></label>
       <label class="fault-chip nj-fault"><input type="checkbox" value="RT not working" data-price="add"><span>RT not working</span></label>
-      <label class="fault-chip nj-fault"><input type="checkbox" value="LB not working" data-price="add"><span>LB not working</span></label>
-      <label class="fault-chip nj-fault"><input type="checkbox" value="RB not working" data-price="add"><span>RB not working</span></label>
+      <label class="fault-chip nj-fault"><input type="checkbox" value="LB not working" data-price="add" data-parts="1.00"><span>LB not working</span></label>
+      <label class="fault-chip nj-fault"><input type="checkbox" value="RB not working" data-price="add" data-parts="1.00"><span>RB not working</span></label>
       <label class="fault-chip nj-fault"><input type="checkbox" value="A button not working" data-price="first"><span>A button</span></label>
       <label class="fault-chip nj-fault"><input type="checkbox" value="B button not working" data-price="add"><span>B button</span></label>
       <label class="fault-chip nj-fault"><input type="checkbox" value="X button not working" data-price="add"><span>X button</span></label>
@@ -1958,6 +1960,7 @@ document.getElementById('search-box').addEventListener('input', e => {
         <label>Quoted Price (£) <span id="nj-price-hint" style="color:var(--accent);font-size:0.8rem"></span></label>
         <input type="number" id="nj-quoted" min="0" step="0.01" placeholder="0.00" style="max-width:180px">
       </div>
+      <div class="field" style="margin-top:8px"><label>Est. Parts Cost (£) <span style="color:var(--muted);font-size:0.8rem">auto-filled</span></label><input type="number" id="nj-parts" min="0" step="0.01" placeholder="0.00" style="max-width:180px"></div>
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-top:10px;background:var(--hover);border:1px solid var(--border);border-radius:8px;padding:10px 14px;user-select:none">
         <input type="checkbox" id="nj-mailin" style="width:17px;height:17px;flex-shrink:0">
         <span>📬 Mail-in job — customer posting to me, I post back (+£3.95)</span>
@@ -2298,6 +2301,52 @@ document.getElementById('nj-fault-area').addEventListener('change', e => {
 });
 document.getElementById('nj-mailin').addEventListener('change', calcJobPrice);
 
+function calcJobParts() {
+  var total = 0;
+  document.querySelectorAll('#nj-fault-area input[type=checkbox]:checked').forEach(function(cb) {
+    total += parseFloat(cb.dataset.parts || 0);
+  });
+  document.getElementById('nj-parts').value = total > 0 ? total.toFixed(2) : '';
+}
+
+function renderPnl() {
+  var done = jobs.filter(function(j) { return j.paid || j.status === 'Collected'; });
+  var totRev = done.reduce(function(s,j) { return s + (+j.quotedPrice||0); }, 0);
+  var totParts = done.reduce(function(s,j) { return s + (+j.partsCost||0); }, 0);
+  var totProfit = totRev - totParts;
+  function fmt(v) { return '£' + v.toFixed(2); }
+  function card(label, val, color) {
+    return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 16px;min-width:120px">'
+      + '<div style="font-size:0.75rem;color:var(--muted)">' + label + '</div>'
+      + '<div style="font-size:1.2rem;font-weight:600;color:' + (color||'var(--text)') + '">' + val + '</div></div>';
+  }
+  document.getElementById('pnl-summary').innerHTML =
+    card('Revenue', fmt(totRev)) +
+    card('Parts Cost', fmt(totParts)) +
+    card('Profit', fmt(totProfit), totProfit >= 0 ? '#22c55e' : '#ef4444') +
+    card('Jobs', done.length);
+  document.getElementById('pnl-tbody').innerHTML = done.slice().reverse().map(function(j) {
+    var rev = +j.quotedPrice||0, parts = +j.partsCost||0, profit = rev - parts;
+    return '<tr style="border-top:1px solid var(--border)">'
+      + '<td style="padding:5px 8px;color:var(--muted)">' + j.num + '</td>'
+      + '<td style="padding:5px 8px">' + (j.customerName||'') + '</td>'
+      + '<td style="padding:5px 8px;color:var(--muted)">' + (j.device||'') + '</td>'
+      + '<td style="padding:5px 8px;color:var(--muted)">' + (j.dateCompleted||j.dateIn||'') + '</td>'
+      + '<td style="padding:5px 8px;text-align:right">' + fmt(rev) + '</td>'
+      + '<td style="padding:5px 8px;text-align:right;color:var(--muted)">' + fmt(parts) + '</td>'
+      + '<td style="padding:5px 8px;text-align:right;font-weight:600;color:' + (profit>=0?'#22c55e':'#ef4444') + '">' + fmt(profit) + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+document.getElementById('btn-pnl').addEventListener('click', function() {
+  var panel = document.getElementById('pnl-panel');
+  var visible = panel.style.display !== 'none';
+  panel.style.display = visible ? 'none' : 'block';
+  if (!visible) renderPnl();
+});
+
+
 document.getElementById('btn-add-job').addEventListener('click', () => {
   document.getElementById('nj-datein').value = new Date().toISOString().slice(0,10);
   document.getElementById('nj-name').value = '';
@@ -2305,6 +2354,7 @@ document.getElementById('btn-add-job').addEventListener('click', () => {
   document.getElementById('nj-device').value = '';
   document.getElementById('nj-fault-notes').value = '';
   document.getElementById('nj-quoted').value = '';
+  document.getElementById('nj-parts').value = '';
   document.getElementById('nj-mailin').checked = false;
   document.querySelectorAll('#nj-fault-area input[type=checkbox]').forEach(cb => {
     cb.checked = false;
@@ -2336,6 +2386,7 @@ document.getElementById('nj-confirm').addEventListener('click', async () => {
     faults,
     faultNotes:      document.getElementById('nj-fault-notes').value.trim(),
     quotedPrice:     parseFloat(document.getElementById('nj-quoted').value) || 0,
+    partsCost:       parseFloat(document.getElementById('nj-parts').value) || 0,
     mailIn:          document.getElementById('nj-mailin').checked,
     status:          document.getElementById('nj-mailin').checked ? 'Awaiting Item' : 'Checked In',
   };
