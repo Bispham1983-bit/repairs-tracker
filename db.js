@@ -74,7 +74,7 @@ function intify(obj) {
 }
 
 const ITEM_COLS = [
-  'id','num','dateIn','status','category','brand','colour','condition',
+  'id','num','dateIn','status','category','brand','model','colour','condition',
   'faultDesc','repairNotes','hoursSpent','buyPrice','postageIn','partsCost',
   'estSalePrice','estProfit','saleVenue','listedEbay','listedVinted',
   'listedFacebook','listedCEX','listedOther','recommendedVenue','ebayItemNum','saleDate',
