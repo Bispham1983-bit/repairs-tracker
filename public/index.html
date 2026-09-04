@@ -1953,16 +1953,15 @@ document.getElementById('search-box').addEventListener('input', e => {
     </div>
     <div class="field"><label>Custom / additional fault notes</label><textarea id="nj-fault-notes" rows="2" placeholder="Anything not covered above…"></textarea></div>
 
-    <div class="field-grid two-col" style="margin-top:8px">
+    <div style="margin-top:8px">
       <div class="field">
         <label>Quoted Price (£) <span id="nj-price-hint" style="color:var(--accent);font-size:0.8rem"></span></label>
-        <input type="number" id="nj-quoted" min="0" step="0.01" placeholder="0.00">
+        <input type="number" id="nj-quoted" min="0" step="0.01" placeholder="0.00" style="max-width:180px">
       </div>
-      <div class="field" style="display:flex;align-items:center;gap:8px;padding-top:18px">
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-          <input type="checkbox" id="nj-mailin"> Mail-in (+£3.95 postage)
-        </label>
-      </div>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-top:10px;background:var(--hover);border:1px solid var(--border);border-radius:8px;padding:10px 14px;user-select:none">
+        <input type="checkbox" id="nj-mailin" style="width:17px;height:17px;flex-shrink:0">
+        <span>📬 Mail-in job — customer posting to me, I post back (+£3.95)</span>
+      </label>
     </div>
 
     <div style="display:flex;gap:8px;margin-top:16px">
@@ -2343,8 +2342,8 @@ document.getElementById('nj-confirm').addEventListener('click', async () => {
   try {
     const job = await api('POST', '/api/jobs', data);
     jobs.push(job);
-    closeModal('add-job-modal');
     btn.disabled = false; btn.textContent = 'Create Job';
+    closeModal('add-job-modal');
     renderJobList();
     selectJob(job.id);
   } catch(e) {
