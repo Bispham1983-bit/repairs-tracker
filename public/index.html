@@ -2258,7 +2258,7 @@ function chargeViaSquare() {
   if (!job) return;
   var amount = (+job.quotedPrice || 0).toFixed(2);
   var title = encodeURIComponent('Job #' + job.num + ' - ' + (job.customerName||'') + ' - ' + (job.device||''));
-  var url = 'sumupmerchant://pay/1.0?affiliate-key=sup_afk_kJVWin8gUUhfJIezrP9ftB2cbeIW3cbG&amount=' + amount + '&currency=GBP&title=' + title + '&callback=' + encodeURIComponent(window.location.href);
+  var url = 'sumupmerchant://pay/1.0?affiliate-key=sup_afk_kJVWin8gUUhfJIezrP9ftB2cbeIW3cbG&total=' + amount + '&currency=GBP&title=' + title + '&callback=' + encodeURIComponent(window.location.href);
   var overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center';
   overlay.innerHTML = '<div style="background:#1a1d27;border:1px solid #2d3148;border-radius:12px;padding:32px;text-align:center;max-width:300px">'
@@ -2308,7 +2308,7 @@ function tapToPaySumUp() {
   if (!job || !job.quotedPrice) return alert('No quoted price on this job.');
   var amount = parseFloat(job.quotedPrice).toFixed(2);
   var title = encodeURIComponent('Job #' + (job.num||'') + ' - ' + (job.customerName||'Repair'));
-  var url = 'sumupmerchant://pay/1.0?affiliate-key=sup_afk_kJVWin8gUUhfJIezrP9ftB2cbeIW3cbG&amount=' + amount + '&currency=GBP&title=' + title + '&callback=' + encodeURIComponent(window.location.href);
+  var url = 'sumupmerchant://pay/1.0?affiliate-key=sup_afk_kJVWin8gUUhfJIezrP9ftB2cbeIW3cbG&total=' + amount + '&currency=GBP&title=' + title + '&callback=' + encodeURIComponent(window.location.href);
   window.location.href = url;
 }
 
