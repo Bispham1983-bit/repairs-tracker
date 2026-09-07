@@ -212,6 +212,12 @@ module.exports = {
     return this.getJob(id);
   },
 
+  saveInvoice(id, items) {
+    db.prepare("UPDATE jobs SET invoiceData=?, updatedAt=datetime('now') WHERE id=?")
+      .run(JSON.stringify(items), id);
+    return db.prepare('SELECT * FROM jobs WHERE id=?').get(id);
+  },
+
   deleteJob(id) {
     db.prepare('DELETE FROM jobs WHERE id=?').run(id);
   },
@@ -283,6 +289,7 @@ module.exports = {
   try { db.prepare('ALTER TABLE jobs ADD COLUMN ' + col + ' TEXT').run(); } catch(e) {}
 });
 try { db.prepare('ALTER TABLE jobs ADD COLUMN clientId TEXT').run(); } catch(e) {}
+try { db.prepare("ALTER TABLE jobs ADD COLUMN invoiceData TEXT DEFAULT '[]'").run(); } catch(e) {}
 ['firstName','lastName','address'].forEach(col => {
   try { db.prepare('ALTER TABLE clients ADD COLUMN ' + col + " TEXT DEFAULT ''").run(); } catch(e) {}
 });

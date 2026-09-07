@@ -100,6 +100,14 @@ app.delete('/api/jobs/:id', (req, res) => {
 });
 
 
+// ── Invoice API ──────────────────────────────────────────
+app.put('/api/jobs/:id/invoice', (req, res) => {
+  try {
+    const job = db.saveInvoice(req.params.id, req.body.items || []);
+    res.json(job);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── Clients API ──────────────────────────────────────────
 app.get('/api/clients', (req, res) => {
   try { res.json(db.getAllClients()); } catch(e) { res.status(500).json({ error: e.message }); }

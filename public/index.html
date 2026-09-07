@@ -890,6 +890,22 @@
         </div>
       </div>
 
+
+      <!-- Invoice section -->
+      <div id="job-invoice-section" style="margin-bottom:16px">
+        <div class="field-section" style="display:flex;align-items:center;justify-content:space-between">
+          <span>📄 Invoice</span>
+          <button onclick="printInvoice()" style="background:var(--accent);border:none;color:#fff;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:0.8rem;font-weight:600">🖨️ Print / PDF</button>
+        </div>
+        <div id="invoice-lines" style="margin-bottom:8px"></div>
+        <button onclick="addInvoiceLine()" style="background:transparent;border:1px dashed var(--border);color:var(--muted);padding:5px 12px;border-radius:6px;cursor:pointer;font-size:0.82rem;width:100%;margin-bottom:8px">+ Add line</button>
+        <div style="display:flex;justify-content:flex-end;align-items:center;gap:12px;padding:8px 0;border-top:1px solid var(--border)">
+          <span style="font-weight:600;color:var(--muted);font-size:0.85rem">Total</span>
+          <span id="invoice-total" style="font-size:1.15rem;font-weight:700;color:var(--green)">£0.00</span>
+        </div>
+        <button onclick="saveInvoiceLines()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 14px;border-radius:6px;cursor:pointer;font-size:0.82rem">💾 Save Invoice</button>
+      </div>
+
       <!-- Save bar -->
       <div id="save-bar" class="hidden">
         <button id="btn-save">Save Changes</button>
@@ -2225,6 +2241,9 @@ function renderJobDetail() {
     else el.value = val ?? '';
   });
 
+  // Load invoice lines
+  loadInvoiceForJob(job);
+
   // Action bar
   const bar = document.getElementById('job-action-bar');
   bar.innerHTML = '';
@@ -2761,6 +2780,136 @@ document.getElementById('btn-view-jobs').addEventListener('click', () => switchV
 document.getElementById('btn-view-clients').addEventListener('click', () => switchView('clients'));
 
 
+
+// ═══════════════════════════════════════════════════════
+//  INVOICE
+// ═══════════════════════════════════════════════════════
+let invoiceLines = [];
+
+function renderInvoiceLines() {
+  const container = document.getElementById('invoice-lines');
+  if (!container) return;
+  container.innerHTML = '';
+  invoiceLines.forEach(function(line, i) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:grid;grid-template-columns:1fr 90px 32px;gap:6px;margin-bottom:6px;align-items:center';
+    row.innerHTML = `
+      <input value="${line.desc.replace(/"/g,'&quot;')}" placeholder="Description" onchange="invoiceLines[${i}].desc=this.value;updateInvoiceTotal()"
+        style="background:var(--hover);border:1px solid var(--border);border-radius:5px;padding:5px 8px;color:var(--text);font-size:0.83rem">
+      <input type="number" value="${line.amount}" min="0" step="0.01" placeholder="0.00" onchange="invoiceLines[${i}].amount=parseFloat(this.value)||0;updateInvoiceTotal()"
+        style="background:var(--hover);border:1px solid var(--border);border-radius:5px;padding:5px 6px;color:var(--text);font-size:0.83rem;text-align:right">
+      <button onclick="invoiceLines.splice(${i},1);renderInvoiceLines()" style="background:transparent;border:none;color:var(--red,#ef4444);cursor:pointer;font-size:1rem;padding:0">✕</button>`;
+    container.appendChild(row);
+  });
+  updateInvoiceTotal();
+}
+
+function updateInvoiceTotal() {
+  const total = invoiceLines.reduce(function(s, l) { return s + (parseFloat(l.amount) || 0); }, 0);
+  const el = document.getElementById('invoice-total');
+  if (el) el.textContent = '£' + total.toFixed(2);
+}
+
+function addInvoiceLine(desc, amount) {
+  invoiceLines.push({ desc: desc || '', amount: parseFloat(amount) || 0 });
+  renderInvoiceLines();
+}
+
+function loadInvoiceForJob(job) {
+  try { invoiceLines = JSON.parse(job.invoiceData || '[]'); } catch(e) { invoiceLines = []; }
+  // Pre-populate if empty
+  if (!invoiceLines.length) {
+    const labour = parseFloat(job.quotedPrice) || 0;
+    const parts  = parseFloat(job.partsCost)   || 0;
+    if (labour) invoiceLines.push({ desc: 'Labour', amount: labour });
+    if (parts)  invoiceLines.push({ desc: 'Parts',  amount: parts  });
+  }
+  renderInvoiceLines();
+}
+
+async function saveInvoiceLines() {
+  if (!selectedJobId) return;
+  await api('PUT', '/api/jobs/' + selectedJobId + '/invoice', { items: invoiceLines });
+  showToast('Invoice saved');
+}
+
+function printInvoice() {
+  const job = jobs.find(function(j) { return j.id === selectedJobId; });
+  if (!job) return;
+  const total = invoiceLines.reduce(function(s, l) { return s + (parseFloat(l.amount) || 0); }, 0);
+  const date  = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'long', year:'numeric' });
+  const customerName = job.customerName || 'Customer';
+
+  // Try to get client address
+  const client = clients.find(function(c) { return c.id === job.clientId; });
+  const addr = client && client.address ? client.address.replace(/\n/g,'<br>') : '';
+  const fullName = client ? [client.firstName, client.lastName].filter(Boolean).join(' ') || client.name : customerName;
+
+  const rows = invoiceLines.map(function(l) {
+    return `<tr><td>${l.desc}</td><td class="amt">£${(parseFloat(l.amount)||0).toFixed(2)}</td></tr>`;
+  }).join('');
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Invoice — Respawn Repairs</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',Arial,sans-serif; color:#111; background:#fff; padding:40px; max-width:680px; margin:auto; }
+  .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:32px; }
+  .brand { font-size:1.6rem; font-weight:800; color:#7c3aed; letter-spacing:-0.5px; }
+  .brand span { color:#111; }
+  .brand-sub { font-size:0.78rem; color:#666; margin-top:2px; }
+  .invoice-meta { text-align:right; font-size:0.85rem; color:#555; }
+  .invoice-meta strong { font-size:1rem; color:#111; display:block; margin-bottom:2px; }
+  .bill-to { margin-bottom:28px; }
+  .bill-to h3 { font-size:0.7rem; text-transform:uppercase; letter-spacing:1px; color:#888; margin-bottom:6px; }
+  .bill-to p { font-size:0.95rem; }
+  table { width:100%; border-collapse:collapse; margin-bottom:20px; }
+  th { text-align:left; font-size:0.72rem; text-transform:uppercase; letter-spacing:1px; color:#888; padding:6px 0; border-bottom:2px solid #e5e7eb; }
+  th.amt, td.amt { text-align:right; }
+  td { padding:10px 0; font-size:0.93rem; border-bottom:1px solid #f3f4f6; }
+  .total-row { border-top:2px solid #111 !important; }
+  .total-row td { font-weight:700; font-size:1.05rem; padding-top:12px; border-bottom:none; }
+  .footer { margin-top:40px; font-size:0.75rem; color:#aaa; text-align:center; border-top:1px solid #e5e7eb; padding-top:16px; }
+  @media print { body { padding:20px; } }
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <div class="brand">Respawn <span>Repairs</span></div>
+    <div class="brand-sub">respawnrepairs.uk · Harborne, Birmingham</div>
+  </div>
+  <div class="invoice-meta">
+    <strong>INVOICE</strong>
+    Job #${job.num || job.id}<br>
+    ${date}
+  </div>
+</div>
+<div class="bill-to">
+  <h3>Bill to</h3>
+  <p><strong>${fullName}</strong>${addr ? '<br>' + addr : ''}</p>
+  ${job.customerContact ? '<p style="color:#555;font-size:0.85rem;margin-top:4px">' + job.customerContact + '</p>' : ''}
+</div>
+<table>
+  <thead><tr><th>Description</th><th class="amt">Amount</th></tr></thead>
+  <tbody>
+    ${rows}
+    <tr class="total-row"><td>Total</td><td class="amt">£${total.toFixed(2)}</td></tr>
+  </tbody>
+</table>
+${job.device ? '<p style="font-size:0.82rem;color:#666;margin-bottom:4px">Device: ' + job.device + '</p>' : ''}
+${job.faults ? '<p style="font-size:0.82rem;color:#666">Faults: ' + job.faults + '</p>' : ''}
+<div class="footer">Thank you for choosing Respawn Repairs · respawnrepairs.uk</div>
+</body>
+</html>`);
+  win.document.close();
+  win.print();
+}
+
 // ══════════════════════════════════════════════════════════
 //  CLIENTS
 // ══════════════════════════════════════════════════════════
@@ -2802,20 +2951,21 @@ async function loadClients() {
 
 function renderClientList() {
   const q = (document.getElementById('client-search').value || '').toLowerCase();
-  const filtered = clients.filter(c => !q || c.name.toLowerCase().includes(q) || (c.phone||'').includes(q) || (c.email||'').toLowerCase().includes(q));
+  const filtered = clients.filter(c => !q || c.name.toLowerCase().includes(q) || (c.firstName||'').toLowerCase().includes(q) || (c.lastName||'').toLowerCase().includes(q) || (c.phone||'').includes(q) || (c.email||'').toLowerCase().includes(q));
   const el = document.getElementById('clients-list');
   if (!filtered.length) {
     el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:0.85rem">No clients found</div>';
     return;
   }
   el.innerHTML = filtered.map(c => {
-    const initials = c.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const displayName = [c.firstName, c.lastName].filter(Boolean).join(' ') || c.name;
+    const initials = displayName.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
     const active = c.id === selectedClientId ? 'background:var(--surface2);' : '';
     return `<div onclick="selectClient('${c.id}')" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;${active}">
       <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:700;color:#fff;flex-shrink:0">${initials}</div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:600;font-size:0.88rem;display:flex;align-items:center;gap:6px">
-          ${c.name}${c.isVip ? ' <span style="font-size:0.65rem;background:#f59e0b;color:#000;padding:1px 5px;border-radius:8px">VIP</span>' : ''}
+          ${displayName}${c.isVip ? ' <span style="font-size:0.65rem;background:#f59e0b;color:#000;padding:1px 5px;border-radius:8px">VIP</span>' : ''}
         </div>
         <div style="font-size:0.75rem;color:var(--muted)">${c.phone || c.email || '—'}</div>
       </div>
