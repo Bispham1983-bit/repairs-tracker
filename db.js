@@ -77,6 +77,9 @@ db.exec(`
     email     TEXT DEFAULT '',
     notes     TEXT DEFAULT '',
     isVip     INTEGER DEFAULT 0,
+    firstName TEXT DEFAULT '',
+    lastName  TEXT DEFAULT '',
+    address   TEXT DEFAULT '',
     createdAt TEXT DEFAULT (datetime('now')),
     updatedAt TEXT DEFAULT (datetime('now'))
   );
@@ -249,13 +252,13 @@ module.exports = {
   createClient(data) {
     const num = db.prepare("SELECT COALESCE(MAX(num),0)+1 AS n FROM clients").get().n;
     const id  = 'client-' + String(num).padStart(3,'0');
-    db.prepare(`INSERT INTO clients (id,num,name,phone,email,notes,isVip)
-      VALUES (?,?,?,?,?,?,?)`).run(id, num, data.name||'', data.phone||'', data.email||'', data.notes||'', data.isVip ? 1 : 0);
+    db.prepare(`INSERT INTO clients (id,num,name,phone,email,notes,isVip,firstName,lastName,address)
+      VALUES (?,?,?,?,?,?,?,?,?,?)`).run(id, num, data.name||'', data.phone||'', data.email||'', data.notes||'', data.isVip ? 1 : 0, data.firstName||'', data.lastName||'', data.address||'');
     return this.getClient(id);
   },
 
   updateClient(id, data) {
-    const allowed = ['name','phone','email','notes','isVip'];
+    const allowed = ['name','phone','email','notes','isVip','firstName','lastName','address'];
     const row = {};
     for (const k of allowed) { if (k in data) row[k] = k === 'isVip' ? (data[k] ? 1 : 0) : data[k]; }
     if (!Object.keys(row).length) return this.getClient(id);
@@ -280,6 +283,9 @@ module.exports = {
   try { db.prepare('ALTER TABLE jobs ADD COLUMN ' + col + ' TEXT').run(); } catch(e) {}
 });
 try { db.prepare('ALTER TABLE jobs ADD COLUMN clientId TEXT').run(); } catch(e) {}
+['firstName','lastName','address'].forEach(col => {
+  try { db.prepare('ALTER TABLE clients ADD COLUMN ' + col + " TEXT DEFAULT ''").run(); } catch(e) {}
+});
 
 // Back-link existing jobs to clients by customer name
 (function migrateClients() {
