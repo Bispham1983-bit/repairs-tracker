@@ -2171,9 +2171,11 @@ function renderJobDetail() {
   }
   if (!job.paid) {
     mkBtn('💵 Cash', '#2a5c2a', '#6fbf4a', () => markJobPaid('Cash'));
-    mkBtn('💳 Card', '#1a3c6a', '#4a9fbf', () => markJobPaid('Card'));
+    mkBtn('💳 Square', '#1a3c6a', '#4a9fbf', () => markJobPaid('Card'));
+    mkBtn('💳 SumUp', '#1a1a3a', '#7c6ff7', () => markJobPaid('SumUp'));
     mkBtn('🏦 Transfer', '#3a3a2a', '#bfb44a', () => markJobPaid('Bank Transfer'));
     mkBtn('📲 Charge via SumUp', '#1a1a3a', '#7c6ff7', () => chargeViaSquare());
+    mkBtn('📱 Tap to Pay', '#2a1a3a', '#a06ff7', () => tapToPaySumUp());
     mkBtn('📋 Copy Payment Request', '#1a2a2a', '#4abf8a', () => copyPaymentRequest());
     mkBtn('🔗 Send Payment Link', '#1a2a3a', '#4a9fbf', () => sendSumupLink());
   }
@@ -2300,6 +2302,15 @@ async function markJobPaid(method) {
     renderJobList();
     renderJobDetail();
   } catch(e) { alert('Error marking paid: ' + e.message); }
+}
+
+function tapToPaySumUp() {
+  var job = jobs.find(function(j) { return j.id === selectedJobId; });
+  if (!job || !job.quotedPrice) return alert('No quoted price on this job.');
+  var amount = parseFloat(job.quotedPrice).toFixed(2);
+  var title = encodeURIComponent('Job #' + (job.num||'') + ' - ' + (job.customerName||'Repair'));
+  var url = 'sumupmerchant://pay/1.0?affiliate-key=respawn-repairs&amount=' + amount + '&currency=GBP&title=' + title;
+  window.location.href = url;
 }
 
 async function markReceived() {
