@@ -1970,7 +1970,7 @@ document.getElementById('search-box').addEventListener('input', e => {
     <h2 style="margin:0 0 16px">New Repair Job</h2>
     <div class="field-grid two-col">
       <div class="field"><label>Date In</label><input type="date" id="nj-datein"></div>
-      <div class="field"><label>Customer Name</label><input type="text" id="nj-name" placeholder="Name"></div>
+      <div class="field"><label>Customer Name</label><input type="text" id="nj-name" placeholder="Name" list="client-names-datalist" autocomplete="off"><datalist id="client-names-datalist"></datalist></div>
       <div class="field span-all"><label>Contact (phone / email)</label><input type="text" id="nj-contact" placeholder="07700… or email@…"></div>
       <div class="field span-all"><label>Device</label><input type="text" id="nj-device" list="device-list" placeholder="Select or type a device…" autocomplete="off"><datalist id="device-list"><option value="PS5 DualSense Controller"><option value="PS4 DualShock 4 Controller"><option value="Xbox Series X/S Controller"><option value="Xbox One Controller"><option value="Nintendo Switch Pro Controller"><option value="Nintendo Switch Joy-Con (Left)"><option value="Nintendo Switch Joy-Con (Right)"><option value="Nintendo Switch Joy-Con Pair"><option value="Xbox 360 Controller"><option value="PS3 DualShock 3 Controller"><option value="Nintendo Switch OLED"><option value="Nintendo Switch Lite"><option value="Nintendo Switch"><option value="PS5 Console"><option value="PS4 Console"><option value="PS4 Slim Console"><option value="Xbox Series X Console"><option value="Xbox Series S Console"><option value="Xbox One Console"><option value="Steam Deck"></datalist></div>
     </div>
@@ -2047,11 +2047,16 @@ document.getElementById('search-box').addEventListener('input', e => {
           </div>
           <div id="cd-jobcount" style="color:var(--muted);font-size:0.8rem;margin-top:2px"></div>
         </div>
-        <button id="cd-vip-btn" onclick="toggleClientVip()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:0.78rem">☆ VIP</button>
+        <button id="cd-vip-btn" onclick="toggleClientVip()" style="display:none">☆ VIP</button>
       </div>
 
       <!-- Contact fields -->
-      <div style="display:grid;gap:10px;margin-bottom:20px">
+      <div style="display:grid;gap:10px;margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:80px 1fr 1fr;align-items:center;gap:8px">
+          <label style="font-size:0.8rem;color:var(--muted)">Name</label>
+          <input id="cd-firstname" placeholder="First name" style="background:var(--hover);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:0.85rem">
+          <input id="cd-lastname" placeholder="Last name" style="background:var(--hover);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:0.85rem">
+        </div>
         <div style="display:grid;grid-template-columns:80px 1fr;align-items:center;gap:8px">
           <label style="font-size:0.8rem;color:var(--muted)">Phone</label>
           <input id="cd-phone" placeholder="—" style="background:var(--hover);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:0.85rem">
@@ -2061,12 +2066,17 @@ document.getElementById('search-box').addEventListener('input', e => {
           <input id="cd-email" placeholder="—" style="background:var(--hover);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:0.85rem">
         </div>
         <div style="display:grid;grid-template-columns:80px 1fr;align-items:start;gap:8px">
+          <label style="font-size:0.8rem;color:var(--muted);padding-top:6px">Address</label>
+          <textarea id="cd-address" placeholder="—" rows="2" style="background:var(--hover);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:0.85rem;resize:vertical"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:80px 1fr;align-items:start;gap:8px">
           <label style="font-size:0.8rem;color:var(--muted);padding-top:6px">Notes</label>
           <textarea id="cd-notes" placeholder="—" rows="2" style="background:var(--hover);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:0.85rem;resize:vertical"></textarea>
         </div>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:24px">
+      <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap">
         <button onclick="saveClientDetails()" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 16px;cursor:pointer;font-size:0.85rem">Save</button>
+        <button id="cd-vip-btn2" onclick="toggleClientVip()" style="background:transparent;border:2px solid #f59e0b;color:#f59e0b;border-radius:6px;padding:7px 14px;cursor:pointer;font-size:0.85rem;font-weight:600">☆ Mark VIP</button>
         <button onclick="deleteClient()" style="background:transparent;border:1px solid #ef4444;color:#ef4444;border-radius:6px;padding:7px 14px;cursor:pointer;font-size:0.85rem">Delete</button>
       </div>
 
@@ -2679,6 +2689,7 @@ document.getElementById('btn-add-job').addEventListener('click', () => {
     cb.closest('.fault-chip').classList.remove('checked');
   });
   document.getElementById('nj-price-hint').textContent = '';
+  setupCustomerNameAutofill();
   openModal('add-job-modal');
 });
 
@@ -2743,6 +2754,9 @@ function switchView(view) {
 }
 
 document.getElementById('btn-view-inventory').addEventListener('click', () => switchView('inventory'));
+
+// Preload clients in background so autofill works from any view
+(async () => { try { await loadClients(); } catch(e) {} })();
 document.getElementById('btn-view-jobs').addEventListener('click', () => switchView('jobs'));
 document.getElementById('btn-view-clients').addEventListener('click', () => switchView('clients'));
 
@@ -2753,9 +2767,37 @@ document.getElementById('btn-view-clients').addEventListener('click', () => swit
 let clients = [];
 let selectedClientId = null;
 
+function populateClientDatalist() {
+  var dl = document.getElementById('client-names-datalist');
+  if (!dl) return;
+  dl.innerHTML = '';
+  clients.forEach(function(c) {
+    var opt = document.createElement('option');
+    opt.value = c.name;
+    dl.appendChild(opt);
+  });
+}
+
+function setupCustomerNameAutofill() {
+  var inp = document.getElementById('nj-name');
+  if (!inp || inp._autofillReady) return;
+  inp._autofillReady = true;
+  inp.addEventListener('input', function() {
+    var val = this.value.trim();
+    var match = clients.find(function(c) { return c.name.toLowerCase() === val.toLowerCase(); });
+    if (match) {
+      var contactInp = document.getElementById('nj-contact');
+      if (contactInp && !contactInp.value) {
+        contactInp.value = match.phone || match.email || '';
+      }
+    }
+  });
+}
+
 async function loadClients() {
   clients = await api('GET', '/api/clients');
   renderClientList();
+  populateClientDatalist();
 }
 
 function renderClientList() {
@@ -2791,15 +2833,17 @@ async function selectClient(id) {
   const initials = client.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
   document.getElementById('cd-avatar').textContent = initials;
   document.getElementById('cd-name').textContent = client.name;
+  document.getElementById('cd-firstname').value = client.firstName || '';
+  document.getElementById('cd-lastname').value = client.lastName || '';
   document.getElementById('cd-phone').value = client.phone || '';
   document.getElementById('cd-email').value = client.email || '';
+  document.getElementById('cd-address').value = client.address || '';
   document.getElementById('cd-notes').value = client.notes || '';
   const vipBadge = document.getElementById('cd-vip');
-  const vipBtn = document.getElementById('cd-vip-btn');
+  const vipBtn2 = document.getElementById('cd-vip-btn2');
   vipBadge.style.display = client.isVip ? '' : 'none';
-  vipBtn.textContent = client.isVip ? '★ VIP' : '☆ VIP';
-  vipBtn.style.color = client.isVip ? '#f59e0b' : '';
-  vipBtn.style.borderColor = client.isVip ? '#f59e0b' : '';
+  vipBtn2.textContent = client.isVip ? '★ VIP' : '☆ Mark VIP';
+  vipBtn2.style.background = client.isVip ? '#f59e0b22' : 'transparent';
   const jobHistory = await api('GET', '/api/clients/' + id + '/jobs');
   document.getElementById('cd-jobcount').textContent = jobHistory.length + ' repair' + (jobHistory.length !== 1 ? 's' : '');
   document.getElementById('cd-jobs').innerHTML = jobHistory.length ? jobHistory.map(j =>
@@ -2816,9 +2860,12 @@ async function selectClient(id) {
 async function saveClientDetails() {
   if (!selectedClientId) return;
   const updated = await api('PUT', '/api/clients/' + selectedClientId, {
-    phone: document.getElementById('cd-phone').value,
-    email: document.getElementById('cd-email').value,
-    notes: document.getElementById('cd-notes').value,
+    firstName: document.getElementById('cd-firstname').value,
+    lastName:  document.getElementById('cd-lastname').value,
+    phone:     document.getElementById('cd-phone').value,
+    email:     document.getElementById('cd-email').value,
+    address:   document.getElementById('cd-address').value,
+    notes:     document.getElementById('cd-notes').value,
   });
   const idx = clients.findIndex(c => c.id === selectedClientId);
   if (idx >= 0) clients[idx] = updated;
