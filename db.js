@@ -251,7 +251,7 @@ module.exports = {
   },
 
   getClientJobs(clientId) {
-    return db.prepare('SELECT * FROM jobs WHERE clientId=? ORDER BY num DESC').all()
+    return db.prepare('SELECT * FROM jobs WHERE clientId=? ORDER BY num DESC').all(clientId)
       .map(j => ({...j, paid: !!j.paid, mailIn: !!j.mailIn}));
   },
 
