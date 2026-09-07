@@ -68,6 +68,18 @@ db.exec(`
     key   TEXT PRIMARY KEY,
     value TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS clients (
+    id        TEXT PRIMARY KEY,
+    num       INTEGER NOT NULL,
+    name      TEXT NOT NULL,
+    phone     TEXT DEFAULT '',
+    email     TEXT DEFAULT '',
+    notes     TEXT DEFAULT '',
+    isVip     INTEGER DEFAULT 0,
+    createdAt TEXT DEFAULT (datetime('now')),
+    updatedAt TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 // Add new columns to existing DBs safely
@@ -202,6 +214,61 @@ module.exports = {
   },
 
 
+  // ── Clients ────────────────────────────────────────────────
+  getAllClients() {
+    return db.prepare('SELECT * FROM clients ORDER BY num ASC').all().map(c => ({...c, isVip: !!c.isVip}));
+  },
+
+  getClient(id) {
+    const c = db.prepare('SELECT * FROM clients WHERE id=?').get(id);
+    return c ? {...c, isVip: !!c.isVip} : null;
+  },
+
+  getClientByName(name) {
+    const c = db.prepare('SELECT * FROM clients WHERE name=?').get(name);
+    return c ? {...c, isVip: !!c.isVip} : null;
+  },
+
+  getOrCreateClient(name) {
+    if (!name || !name.trim()) return null;
+    let client = db.prepare("SELECT * FROM clients WHERE name=?").get(name.trim());
+    if (!client) {
+      const num = db.prepare("SELECT COALESCE(MAX(num),0)+1 AS n FROM clients").get().n;
+      const id  = 'client-' + String(num).padStart(3,'0');
+      db.prepare("INSERT INTO clients (id,num,name) VALUES (?,?,?)").run(id, num, name.trim());
+      client = db.prepare('SELECT * FROM clients WHERE id=?').get(id);
+    }
+    return {...client, isVip: !!client.isVip};
+  },
+
+  getClientJobs(clientId) {
+    return db.prepare('SELECT * FROM jobs WHERE clientId=? ORDER BY num DESC').all()
+      .map(j => ({...j, paid: !!j.paid, mailIn: !!j.mailIn}));
+  },
+
+  createClient(data) {
+    const num = db.prepare("SELECT COALESCE(MAX(num),0)+1 AS n FROM clients").get().n;
+    const id  = 'client-' + String(num).padStart(3,'0');
+    db.prepare(`INSERT INTO clients (id,num,name,phone,email,notes,isVip)
+      VALUES (?,?,?,?,?,?,?)`).run(id, num, data.name||'', data.phone||'', data.email||'', data.notes||'', data.isVip ? 1 : 0);
+    return this.getClient(id);
+  },
+
+  updateClient(id, data) {
+    const allowed = ['name','phone','email','notes','isVip'];
+    const row = {};
+    for (const k of allowed) { if (k in data) row[k] = k === 'isVip' ? (data[k] ? 1 : 0) : data[k]; }
+    if (!Object.keys(row).length) return this.getClient(id);
+    const sql = 'UPDATE clients SET ' + Object.keys(row).map(k => k+'=@'+k).join(',') + ", updatedAt=datetime('now') WHERE id=@id";
+    db.prepare(sql).run({...row, id});
+    return this.getClient(id);
+  },
+
+  deleteClient(id) {
+    db.prepare("UPDATE jobs SET clientId=NULL WHERE clientId=?").run(id);
+    db.prepare('DELETE FROM clients WHERE id=?').run(id);
+  },
+
   // Used by seed script
   setCounter(n) {
     db.prepare("INSERT OR REPLACE INTO meta (key,value) VALUES ('nextNum',?)").run(String(n));
@@ -212,4 +279,20 @@ module.exports = {
 ['dateReceived','datePostedBack','paymentMethod'].forEach(col => {
   try { db.prepare('ALTER TABLE jobs ADD COLUMN ' + col + ' TEXT').run(); } catch(e) {}
 });
+try { db.prepare('ALTER TABLE jobs ADD COLUMN clientId TEXT').run(); } catch(e) {}
+
+// Back-link existing jobs to clients by customer name
+(function migrateClients() {
+  const unlinked = db.prepare("SELECT DISTINCT customerName FROM jobs WHERE clientId IS NULL AND customerName != ''").all();
+  for (const { customerName } of unlinked) {
+    let client = db.prepare("SELECT id FROM clients WHERE name = ?").get(customerName);
+    if (!client) {
+      const num = (db.prepare("SELECT COALESCE(MAX(num),0)+1 AS n FROM clients").get().n);
+      const id  = 'client-' + String(num).padStart(3,'0');
+      db.prepare("INSERT INTO clients (id,num,name) VALUES (?,?,?)").run(id, num, customerName);
+      client = { id };
+    }
+    db.prepare("UPDATE jobs SET clientId=? WHERE customerName=? AND clientId IS NULL").run(client.id, customerName);
+  }
+})();
 

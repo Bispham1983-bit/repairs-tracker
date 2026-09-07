@@ -606,6 +606,7 @@
   <div style="display:flex;gap:6px;align-items:center">
     <button id="btn-view-inventory" class="view-btn active">📦 Inventory</button>
     <button id="btn-view-jobs" class="view-btn">🔧 Jobs</button>
+    <button id="btn-view-clients" class="view-btn">👥 Clients</button>
   </div>
   <div style="display:flex;gap:6px;align-items:center">
     <button id="btn-add">+ Add Item</button>
@@ -2019,6 +2020,64 @@ document.getElementById('search-box').addEventListener('input', e => {
 </div>
 
 
+<!-- ═══════════════════════════════════════════════════════
+     CLIENTS VIEW
+════════════════════════════════════════════════════════ -->
+<div id="clients-view" style="display:none;flex:1;overflow:hidden;flex-direction:row">
+
+  <!-- Clients list panel -->
+  <div id="clients-list-panel" style="width:300px;min-width:240px;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden">
+    <div style="padding:10px 12px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center">
+      <input id="client-search" placeholder="Search clients…" style="flex:1;background:var(--hover);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:0.85rem">
+      <button id="btn-add-client" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:0.82rem;white-space:nowrap">+ Add</button>
+    </div>
+    <div id="clients-list" style="flex:1;overflow-y:auto"></div>
+  </div>
+
+  <!-- Client detail panel -->
+  <div id="clients-detail-panel" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+    <div id="client-no-selection" style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.9rem">Select a client</div>
+    <div id="client-detail" style="display:none;flex:1;overflow-y:auto;padding:20px 24px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+        <div id="cd-avatar" style="width:48px;height:48px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700;color:#fff;flex-shrink:0"></div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px">
+            <h2 id="cd-name" style="margin:0;font-size:1.1rem"></h2>
+            <span id="cd-vip" style="display:none;background:#f59e0b;color:#000;font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:10px">⭐ VIP</span>
+          </div>
+          <div id="cd-jobcount" style="color:var(--muted);font-size:0.8rem;margin-top:2px"></div>
+        </div>
+        <button id="cd-vip-btn" onclick="toggleClientVip()" style="background:transparent;border:1px solid var(--border);color:var(--muted);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:0.78rem">☆ VIP</button>
+      </div>
+
+      <!-- Contact fields -->
+      <div style="display:grid;gap:10px;margin-bottom:20px">
+        <div style="display:grid;grid-template-columns:80px 1fr;align-items:center;gap:8px">
+          <label style="font-size:0.8rem;color:var(--muted)">Phone</label>
+          <input id="cd-phone" placeholder="—" style="background:var(--hover);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:0.85rem">
+        </div>
+        <div style="display:grid;grid-template-columns:80px 1fr;align-items:center;gap:8px">
+          <label style="font-size:0.8rem;color:var(--muted)">Email</label>
+          <input id="cd-email" placeholder="—" style="background:var(--hover);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:0.85rem">
+        </div>
+        <div style="display:grid;grid-template-columns:80px 1fr;align-items:start;gap:8px">
+          <label style="font-size:0.8rem;color:var(--muted);padding-top:6px">Notes</label>
+          <textarea id="cd-notes" placeholder="—" rows="2" style="background:var(--hover);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:0.85rem;resize:vertical"></textarea>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:24px">
+        <button onclick="saveClientDetails()" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 16px;cursor:pointer;font-size:0.85rem">Save</button>
+        <button onclick="deleteClient()" style="background:transparent;border:1px solid #ef4444;color:#ef4444;border-radius:6px;padding:7px 14px;cursor:pointer;font-size:0.85rem">Delete</button>
+      </div>
+
+      <!-- Job history -->
+      <h3 style="font-size:0.9rem;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em">Repair History</h3>
+      <div id="cd-jobs" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+  </div>
+</div>
+
+
 <style>
   .job-filter-btn {
     background: transparent; border: 1px solid var(--subtle); color: var(--muted);
@@ -2044,6 +2103,14 @@ document.getElementById('search-box').addEventListener('input', e => {
     #pnl-panel table { font-size: 0.7rem; width: 100%; }
     #pnl-panel th, #pnl-panel td { padding: 3px 4px !important; }
     #pnl-panel h3 { font-size: 0.85rem !important; margin: 10px 0 4px !important; }
+  }
+  #clients-list-panel.hidden { display: none !important; }
+  #clients-detail-panel { display: flex; }
+  @media (max-width: 700px) {
+    #clients-list-panel { width: 100% !important; min-width: unset !important; border-right: none; }
+    #clients-list-panel.hidden { display: none !important; }
+    #clients-detail-panel { display: none; width: 100%; }
+    #clients-detail-panel.mobile-show { display: flex !important; flex-direction: column; }
   }
 </style>
 <script>
@@ -2660,19 +2727,136 @@ let currentView = 'inventory';
 function switchView(view) {
   currentView = view;
   const isInventory = view === 'inventory';
+  const isJobs      = view === 'jobs';
+  const isClients   = view === 'clients';
   document.getElementById('main').style.display          = isInventory ? '' : 'none';
   document.getElementById('stats-bar').style.display     = isInventory ? '' : 'none';
-  document.getElementById('filter-bar').style.display     = isInventory ? '' : 'none';
-  document.getElementById('jobs-view').style.display     = isInventory ? 'none' : 'flex';
+  document.getElementById('filter-bar').style.display    = isInventory ? '' : 'none';
+  document.getElementById('jobs-view').style.display     = isJobs      ? 'flex' : 'none';
+  document.getElementById('clients-view').style.display  = isClients   ? 'flex' : 'none';
   document.getElementById('btn-add').style.display       = isInventory ? '' : 'none';
-  // btn-add-job is now inside jobs-view, always visible there
   document.getElementById('btn-view-inventory').classList.toggle('active', isInventory);
-  document.getElementById('btn-view-jobs').classList.toggle('active', !isInventory);
-  if (!isInventory && !jobs.length) loadJobs();
+  document.getElementById('btn-view-jobs').classList.toggle('active', isJobs);
+  document.getElementById('btn-view-clients').classList.toggle('active', isClients);
+  if (isJobs && !jobs.length) loadJobs();
+  if (isClients && !clients.length) loadClients();
 }
 
 document.getElementById('btn-view-inventory').addEventListener('click', () => switchView('inventory'));
 document.getElementById('btn-view-jobs').addEventListener('click', () => switchView('jobs'));
+document.getElementById('btn-view-clients').addEventListener('click', () => switchView('clients'));
+
+
+// ══════════════════════════════════════════════════════════
+//  CLIENTS
+// ══════════════════════════════════════════════════════════
+let clients = [];
+let selectedClientId = null;
+
+async function loadClients() {
+  clients = await api('GET', '/api/clients');
+  renderClientList();
+}
+
+function renderClientList() {
+  const q = (document.getElementById('client-search').value || '').toLowerCase();
+  const filtered = clients.filter(c => !q || c.name.toLowerCase().includes(q) || (c.phone||'').includes(q) || (c.email||'').toLowerCase().includes(q));
+  const el = document.getElementById('clients-list');
+  if (!filtered.length) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:0.85rem">No clients found</div>';
+    return;
+  }
+  el.innerHTML = filtered.map(c => {
+    const initials = c.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const active = c.id === selectedClientId ? 'background:var(--surface2);' : '';
+    return `<div onclick="selectClient('${c.id}')" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;${active}">
+      <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:700;color:#fff;flex-shrink:0">${initials}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:0.88rem;display:flex;align-items:center;gap:6px">
+          ${c.name}${c.isVip ? ' <span style="font-size:0.65rem;background:#f59e0b;color:#000;padding:1px 5px;border-radius:8px">VIP</span>' : ''}
+        </div>
+        <div style="font-size:0.75rem;color:var(--muted)">${c.phone || c.email || '—'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function selectClient(id) {
+  selectedClientId = id;
+  renderClientList();
+  const client = clients.find(c => c.id === id);
+  if (!client) return;
+  document.getElementById('client-no-selection').style.display = 'none';
+  document.getElementById('client-detail').style.display = 'block';
+  const initials = client.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('cd-avatar').textContent = initials;
+  document.getElementById('cd-name').textContent = client.name;
+  document.getElementById('cd-phone').value = client.phone || '';
+  document.getElementById('cd-email').value = client.email || '';
+  document.getElementById('cd-notes').value = client.notes || '';
+  const vipBadge = document.getElementById('cd-vip');
+  const vipBtn = document.getElementById('cd-vip-btn');
+  vipBadge.style.display = client.isVip ? '' : 'none';
+  vipBtn.textContent = client.isVip ? '★ VIP' : '☆ VIP';
+  vipBtn.style.color = client.isVip ? '#f59e0b' : '';
+  vipBtn.style.borderColor = client.isVip ? '#f59e0b' : '';
+  const jobHistory = await api('GET', '/api/clients/' + id + '/jobs');
+  document.getElementById('cd-jobcount').textContent = jobHistory.length + ' repair' + (jobHistory.length !== 1 ? 's' : '');
+  document.getElementById('cd-jobs').innerHTML = jobHistory.length ? jobHistory.map(j =>
+    `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;cursor:pointer" onclick="switchView('jobs');setTimeout(()=>selectJob('${j.id}'),100)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:600;font-size:0.85rem">Job #${j.num} — ${j.device||'—'}</span>
+        <span style="font-size:0.78rem;color:${j.paid?'#22c55e':'var(--muted)'}">${j.paid?'✓ Paid':'Unpaid'}</span>
+      </div>
+      <div style="font-size:0.75rem;color:var(--muted);margin-top:3px">${j.dateIn||''} · ${j.status||''} · £${(+j.quotedPrice||0).toFixed(2)}</div>
+    </div>`
+  ).join('') : '<div style="color:var(--muted);font-size:0.85rem">No jobs yet</div>';
+}
+
+async function saveClientDetails() {
+  if (!selectedClientId) return;
+  const updated = await api('PUT', '/api/clients/' + selectedClientId, {
+    phone: document.getElementById('cd-phone').value,
+    email: document.getElementById('cd-email').value,
+    notes: document.getElementById('cd-notes').value,
+  });
+  const idx = clients.findIndex(c => c.id === selectedClientId);
+  if (idx >= 0) clients[idx] = updated;
+  renderClientList();
+}
+
+async function toggleClientVip() {
+  if (!selectedClientId) return;
+  const client = clients.find(c => c.id === selectedClientId);
+  if (!client) return;
+  const updated = await api('PUT', '/api/clients/' + selectedClientId, { isVip: !client.isVip });
+  const idx = clients.findIndex(c => c.id === selectedClientId);
+  if (idx >= 0) clients[idx] = updated;
+  selectClient(selectedClientId);
+}
+
+async function deleteClient() {
+  if (!selectedClientId) return;
+  if (!confirm('Delete this client? Their jobs will be kept.')) return;
+  await api('DELETE', '/api/clients/' + selectedClientId);
+  clients = clients.filter(c => c.id !== selectedClientId);
+  selectedClientId = null;
+  document.getElementById('client-no-selection').style.display = '';
+  document.getElementById('client-detail').style.display = 'none';
+  renderClientList();
+}
+
+document.getElementById('client-search').addEventListener('input', renderClientList);
+
+document.getElementById('btn-add-client').addEventListener('click', async () => {
+  const name = prompt('Client name:');
+  if (!name || !name.trim()) return;
+  const client = await api('POST', '/api/clients', { name: name.trim() });
+  clients.push(client);
+  renderClientList();
+  selectClient(client.id);
+});
+
 </script>
 
 </body>

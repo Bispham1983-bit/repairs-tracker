@@ -84,7 +84,8 @@ app.get('/api/jobs', (req, res) => {
 });
 
 app.post('/api/jobs', (req, res) => {
-  const job = db.createJob(req.body);
+  const client = req.body.customerName ? db.getOrCreateClient(req.body.customerName) : null;
+  const job = db.createJob({ ...req.body, clientId: client ? client.id : null });
   res.json(job);
 });
 
@@ -98,6 +99,27 @@ app.delete('/api/jobs/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+
+// ── Clients API ──────────────────────────────────────────
+app.get('/api/clients', (req, res) => {
+  try { res.json(db.getAllClients()); } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/clients', (req, res) => {
+  try { res.json(db.createClient(req.body)); } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/clients/:id', (req, res) => {
+  try { res.json(db.updateClient(req.params.id, req.body)); } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/clients/:id', (req, res) => {
+  try { db.deleteClient(req.params.id); res.json({ ok: true }); } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/clients/:id/jobs', (req, res) => {
+  try { res.json(db.getClientJobs(req.params.id)); } catch(e) { res.status(500).json({ error: e.message }); }
+});
 
 // ── Square ───────────────────────────────────────────────
 const https = require('https');
