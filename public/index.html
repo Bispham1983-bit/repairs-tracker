@@ -888,23 +888,7 @@
             <div class="value" id="pl-margin">—</div>
           </div>
         </div>
-      </div>
-
-
-      <!-- Invoice section -->
-      <div id="job-invoice-section" style="margin-bottom:16px">
-        <div class="field-section" style="display:flex;align-items:center;justify-content:space-between">
-          <span>📄 Invoice</span>
-          <button onclick="printInvoice()" style="background:var(--accent);border:none;color:#fff;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:0.8rem;font-weight:600">🖨️ Print / PDF</button>
-        </div>
-        <div id="invoice-lines" style="margin-bottom:8px"></div>
-        <button onclick="addInvoiceLine()" style="background:transparent;border:1px dashed var(--border);color:var(--muted);padding:5px 12px;border-radius:6px;cursor:pointer;font-size:0.82rem;width:100%;margin-bottom:8px">+ Add line</button>
-        <div style="display:flex;justify-content:flex-end;align-items:center;gap:12px;padding:8px 0;border-top:1px solid var(--border)">
-          <span style="font-weight:600;color:var(--muted);font-size:0.85rem">Total</span>
-          <span id="invoice-total" style="font-size:1.15rem;font-weight:700;color:var(--green)">£0.00</span>
-        </div>
-        <button onclick="saveInvoiceLines()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 14px;border-radius:6px;cursor:pointer;font-size:0.82rem">💾 Save Invoice</button>
-      </div>
+      </div>      </div>
 
       <!-- Save bar -->
       <div id="save-bar" class="hidden">
@@ -1968,6 +1952,24 @@ document.getElementById('search-box').addEventListener('input', e => {
           <div id="jd-profit" style="font-size:1.3rem;font-weight:700">—</div>
         </div>
       </div>
+
+
+
+
+      <!-- Invoice section -->
+      <div id="job-invoice-section" style="margin-bottom:16px">
+        <div class="field-section" style="display:flex;align-items:center;justify-content:space-between">
+          <span>📄 Invoice</span>
+          <button onclick="printInvoice()" style="background:var(--accent);border:none;color:#fff;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:0.8rem;font-weight:600">🖨️ Print / PDF</button>
+        </div>
+        <div id="invoice-lines" style="margin-bottom:8px"></div>
+        <button onclick="addInvoiceLine()" style="background:transparent;border:1px dashed var(--border);color:var(--muted);padding:5px 12px;border-radius:6px;cursor:pointer;font-size:0.82rem;width:100%;margin-bottom:8px">+ Add line</button>
+        <div style="display:flex;justify-content:flex-end;align-items:center;gap:12px;padding:8px 0;border-top:1px solid var(--border)">
+          <span style="font-weight:600;color:var(--muted);font-size:0.85rem">Total</span>
+          <span id="invoice-total" style="font-size:1.15rem;font-weight:700;color:var(--green)">£0.00</span>
+        </div>
+        <button onclick="saveInvoiceLines()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 14px;border-radius:6px;cursor:pointer;font-size:0.82rem">💾 Save Invoice</button>
+
 
       <!-- Save bar -->
       <div id="job-save-bar" class="hidden" style="position:sticky;bottom:0;background:var(--surface);padding:10px 0;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center">
