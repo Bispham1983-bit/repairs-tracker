@@ -2174,8 +2174,7 @@ function renderJobDetail() {
     mkBtn('💳 Square', '#1a3c6a', '#4a9fbf', () => markJobPaid('Card'));
     mkBtn('💳 SumUp', '#1a1a3a', '#7c6ff7', () => markJobPaid('SumUp'));
     mkBtn('🏦 Transfer', '#3a3a2a', '#bfb44a', () => markJobPaid('Bank Transfer'));
-    mkBtn('📲 Charge via SumUp', '#1a1a3a', '#7c6ff7', () => chargeViaSquare());
-    mkBtn('📱 Tap to Pay', '#2a1a3a', '#a06ff7', () => tapToPaySumUp());
+    mkBtn('📱 Tap to Pay (SumUp)', '#1a1a3a', '#7c6ff7', () => tapToPaySumUp());
     mkBtn('📋 Copy Payment Request', '#1a2a2a', '#4abf8a', () => copyPaymentRequest());
     mkBtn('🔗 Send Payment Link', '#1a2a3a', '#4a9fbf', () => sendSumupLink());
   }
@@ -2309,7 +2308,7 @@ function tapToPaySumUp() {
   if (!job || !job.quotedPrice) return alert('No quoted price on this job.');
   var amount = parseFloat(job.quotedPrice).toFixed(2);
   var title = encodeURIComponent('Job #' + (job.num||'') + ' - ' + (job.customerName||'Repair'));
-  var url = 'sumupmerchant://pay/1.0?affiliate-key=respawn-repairs&amount=' + amount + '&currency=GBP&title=' + title;
+  var url = 'sumupmerchant://pay/1.0?affiliate-key=sup_afk_kJVWin8gUUhfJIezrP9ftB2cbeIW3cbG&amount=' + amount + '&currency=GBP&title=' + title + '&callback=' + encodeURIComponent(window.location.href);
   window.location.href = url;
 }
 
