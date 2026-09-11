@@ -607,6 +607,7 @@
     <button id="btn-view-inventory" class="view-btn active">📦 Inventory</button>
     <button id="btn-view-jobs" class="view-btn">🔧 Jobs</button>
     <button id="btn-view-clients" class="view-btn">👥 Clients</button>
+    <button id="btn-view-pnl" class="view-btn">📊 P&amp;L</button>
   </div>
   <div style="display:flex;gap:6px;align-items:center">
     <button id="btn-add">+ Add Item</button>
@@ -688,7 +689,6 @@
       <div id="detail-tabs">
         <button class="tab-btn active" data-tab="details">Details</button>
         <button class="tab-btn" data-tab="sale">Sale Info</button>
-        <button class="tab-btn" data-tab="pl">P&amp;L</button>
       </div>
 
       <!-- Tab: Details -->
@@ -847,52 +847,7 @@
         </div>
       </div>
 
-      <!-- Tab: P&L -->
-      <div class="tab-pane" id="tab-pl">
-        <div class="field-section">Costs</div>
-        <div class="field-grid two-col">
-          <div class="field">
-            <label>Buy Price (£)</label>
-            <input type="number" data-field="buyPrice" min="0" step="0.01">
-          </div>
-          <div class="field">
-            <label>Postage In (£)</label>
-            <input type="number" data-field="postageIn" min="0" step="0.01">
-          </div>
-          <div class="field">
-            <label>Parts Cost (£)</label>
-            <input type="number" data-field="partsCost" min="0" step="0.01">
-          </div>
-          <div class="field">
-            <label>Est. Sale Price (£)</label>
-            <input type="number" data-field="estSalePrice" min="0" step="0.01">
-          </div>
-          <div class="field">
-            <label>Sale Price Achieved (£)</label>
-            <input type="number" data-field="salePrice" min="0" step="0.01">
-          </div>
-        </div>
-
-        <div class="field-section">Summary</div>
-        <div class="pl-grid">
-          <div class="pl-card">
-            <div class="label">Total Cost</div>
-            <div class="value" id="pl-cost">—</div>
-          </div>
-          <div class="pl-card">
-            <div class="label">Sale Price</div>
-            <div class="value" id="pl-sale">—</div>
-          </div>
-          <div class="pl-card">
-            <div class="label">Net Profit</div>
-            <div class="value" id="pl-net">—</div>
-          </div>
-          <div class="pl-card">
-            <div class="label">Margin</div>
-            <div class="value" id="pl-margin">—</div>
-          </div>
-        </div>
-      </div>      </div>
+      </div>
 
       <!-- Save bar -->
       <div id="save-bar" class="hidden">
@@ -1674,6 +1629,7 @@ function updatePLDisplay(item) {
 
   function set(id, text, cls) {
     const el = document.getElementById(id);
+    if (!el) return;
     el.textContent = text;
     el.className = 'value' + (cls ? ' ' + cls : '');
   }
@@ -1983,6 +1939,71 @@ document.getElementById('search-box').addEventListener('input', e => {
       </div>
       <div style="height:60px"></div>
     </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     COMBINED P&L VIEW
+════════════════════════════════════════════════════════ -->
+<div id="pnl-combined-view" style="display:none;flex:1;overflow-y:auto;padding:20px 24px">
+  <h2 style="margin:0 0 4px;font-size:1.2rem">📊 Profit &amp; Loss</h2>
+  <p style="color:var(--muted);font-size:0.8rem;margin-bottom:16px">All inventory sales + completed repair jobs</p>
+
+  <div id="cpnl-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px"></div>
+
+  <div style="display:flex;gap:6px;margin-bottom:12px">
+    <button id="cpnl-tab-monthly" onclick="cpnlSetTab('monthly')" style="font-size:0.82rem;padding:5px 14px;border-radius:6px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer">Monthly</button>
+    <button id="cpnl-tab-inv" onclick="cpnlSetTab('inv')" style="font-size:0.82rem;padding:5px 14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer">Inventory Sales</button>
+    <button id="cpnl-tab-jobs" onclick="cpnlSetTab('jobs')" style="font-size:0.82rem;padding:5px 14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer">Repair Jobs</button>
+  </div>
+
+  <!-- Monthly combined -->
+  <div id="cpnl-monthly-view">
+    <table style="width:100%;font-size:0.85rem;border-collapse:collapse">
+      <thead><tr style="text-align:left;color:var(--muted);border-bottom:2px solid var(--border)">
+        <th style="padding:6px 8px">Month</th>
+        <th style="padding:6px 8px;text-align:right">Inv. Sales</th>
+        <th style="padding:6px 8px;text-align:right">Jobs Rev.</th>
+        <th style="padding:6px 8px;text-align:right">Total Rev.</th>
+        <th style="padding:6px 8px;text-align:right">Costs</th>
+        <th style="padding:6px 8px;text-align:right">Fees</th>
+        <th style="padding:6px 8px;text-align:right">Net Profit</th>
+      </tr></thead>
+      <tbody id="cpnl-monthly-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- Inventory sales breakdown -->
+  <div id="cpnl-inv-view" style="display:none">
+    <table style="width:100%;font-size:0.85rem;border-collapse:collapse">
+      <thead><tr style="text-align:left;color:var(--muted);border-bottom:2px solid var(--border)">
+        <th style="padding:6px 8px">#</th>
+        <th style="padding:6px 8px">Item</th>
+        <th style="padding:6px 8px">Date Sold</th>
+        <th style="padding:6px 8px;text-align:right">Sale Price</th>
+        <th style="padding:6px 8px;text-align:right">Cost In</th>
+        <th style="padding:6px 8px;text-align:right">Fees/Post</th>
+        <th style="padding:6px 8px;text-align:right">Net Profit</th>
+      </tr></thead>
+      <tbody id="cpnl-inv-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- Jobs breakdown -->
+  <div id="cpnl-jobs-view" style="display:none">
+    <table style="width:100%;font-size:0.85rem;border-collapse:collapse">
+      <thead><tr style="text-align:left;color:var(--muted);border-bottom:2px solid var(--border)">
+        <th style="padding:6px 8px">#</th>
+        <th style="padding:6px 8px">Customer</th>
+        <th style="padding:6px 8px">Device</th>
+        <th style="padding:6px 8px">Date</th>
+        <th style="padding:6px 8px;text-align:right">Revenue</th>
+        <th style="padding:6px 8px;text-align:right">Parts</th>
+        <th style="padding:6px 8px;text-align:right">Fees</th>
+        <th style="padding:6px 8px;text-align:right">Profit</th>
+      </tr></thead>
+      <tbody id="cpnl-jobs-tbody"></tbody>
+    </table>
   </div>
 </div>
 
@@ -2611,7 +2632,7 @@ function renderPnl() {
   document.getElementById('pnl-summary').innerHTML =
     card('Turnover', fmt(totRev), '', done.length + ' jobs') +
     card('Cost of Parts', fmt(totParts)) +
-    card('Fees', fmt(squareFees), '#ef4444', cardJobs.length + ' card jobs @ 1.75%') +
+    card('Fees', fmt(squareFees), '#ef4444', done.filter(function(j){return j.paymentMethod==='Card'||j.paymentMethod==='SumUp';}).length + ' card jobs') +
     card('Net Profit', fmt(netProfit), netProfit >= 0 ? '#22c55e' : '#ef4444',
          totRev > 0 ? Math.round(netProfit/totRev*100) + '% margin' : '') +
     card('Mail-in', mailInCount, '', fmt(mailInCount * 3.95) + ' surcharge');
@@ -2765,17 +2786,21 @@ function switchView(view) {
   const isInventory = view === 'inventory';
   const isJobs      = view === 'jobs';
   const isClients   = view === 'clients';
-  document.getElementById('main').style.display          = isInventory ? '' : 'none';
-  document.getElementById('stats-bar').style.display     = isInventory ? '' : 'none';
-  document.getElementById('filter-bar').style.display    = isInventory ? '' : 'none';
-  document.getElementById('jobs-view').style.display     = isJobs      ? 'flex' : 'none';
-  document.getElementById('clients-view').style.display  = isClients   ? 'flex' : 'none';
-  document.getElementById('btn-add').style.display       = isInventory ? '' : 'none';
+  const isPnl       = view === 'pnl';
+  document.getElementById('main').style.display               = isInventory ? '' : 'none';
+  document.getElementById('stats-bar').style.display          = isInventory ? '' : 'none';
+  document.getElementById('filter-bar').style.display         = isInventory ? '' : 'none';
+  document.getElementById('jobs-view').style.display          = isJobs      ? 'flex' : 'none';
+  document.getElementById('clients-view').style.display       = isClients   ? 'flex' : 'none';
+  document.getElementById('pnl-combined-view').style.display  = isPnl       ? 'block' : 'none';
+  document.getElementById('btn-add').style.display            = isInventory ? '' : 'none';
   document.getElementById('btn-view-inventory').classList.toggle('active', isInventory);
   document.getElementById('btn-view-jobs').classList.toggle('active', isJobs);
   document.getElementById('btn-view-clients').classList.toggle('active', isClients);
+  document.getElementById('btn-view-pnl').classList.toggle('active', isPnl);
   if (isJobs && !jobs.length) loadJobs();
   if (isClients && !clients.length) loadClients();
+  if (isPnl) { if (!jobs.length) loadJobs().then(renderCombinedPnl); else renderCombinedPnl(); }
 }
 
 document.getElementById('btn-view-inventory').addEventListener('click', () => switchView('inventory'));
@@ -2784,6 +2809,133 @@ document.getElementById('btn-view-inventory').addEventListener('click', () => sw
 (async () => { try { await loadClients(); } catch(e) {} })();
 document.getElementById('btn-view-jobs').addEventListener('click', () => switchView('jobs'));
 document.getElementById('btn-view-clients').addEventListener('click', () => switchView('clients'));
+document.getElementById('btn-view-pnl').addEventListener('click', () => switchView('pnl'));
+
+// ── Combined P&L ──────────────────────────────────────────
+var cpnlTab = 'monthly';
+function cpnlSetTab(tab) {
+  cpnlTab = tab;
+  ['monthly','inv','jobs'].forEach(function(t) {
+    document.getElementById('cpnl-' + t + '-view').style.display = t === tab ? '' : 'none';
+    var btn = document.getElementById('cpnl-tab-' + t);
+    btn.style.background   = t === tab ? 'var(--accent)' : 'transparent';
+    btn.style.color        = t === tab ? '#fff' : 'var(--muted)';
+    btn.style.borderColor  = t === tab ? 'var(--accent)' : 'var(--border)';
+  });
+}
+
+function renderCombinedPnl() {
+  var fmt = function(v) { return '£' + (+v).toFixed(2); };
+  function card(label, val, color, sub) {
+    return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;min-width:120px">'
+      + '<div style="font-size:0.72rem;color:var(--muted);margin-bottom:2px">' + label + '</div>'
+      + '<div style="font-size:1.1rem;font-weight:600;color:' + (color || 'var(--text)') + '">' + val + '</div>'
+      + (sub ? '<div style="font-size:0.68rem;color:var(--muted);margin-top:1px">' + sub + '</div>' : '')
+      + '</div>';
+  }
+
+  // Inventory sold items
+  var soldItems = items.filter(function(i) { return i.status === 'Sold'; });
+  var invRev    = soldItems.reduce(function(s,i) { return s + (+i.salePrice||0); }, 0);
+  var invCost   = soldItems.reduce(function(s,i) { return s + (+i.buyPrice||0) + (+i.postageIn||0) + (+i.partsCost||0); }, 0);
+  var invFees   = soldItems.reduce(function(s,i) { return s + (+i.feesPost||0); }, 0);
+  var invProfit = invRev - invCost - invFees;
+
+  // Completed jobs
+  var doneJobs  = jobs.filter(function(j) { return j.paid || j.status === 'Collected'; });
+  var jobRev    = doneJobs.reduce(function(s,j) { return s + (+j.quotedPrice||0); }, 0);
+  var jobCost   = doneJobs.reduce(function(s,j) { return s + (+j.partsCost||0); }, 0);
+  var jobFees   = doneJobs.reduce(function(s,j) { return s + (+j.quotedPrice||0) * (j.paymentMethod==='Card'?0.0175:j.paymentMethod==='SumUp'?0.0169:0); }, 0);
+  var jobProfit = jobRev - jobCost - jobFees;
+
+  var totalRev    = invRev + jobRev;
+  var totalCost   = invCost + jobCost;
+  var totalFees   = invFees + jobFees;
+  var totalProfit = invProfit + jobProfit;
+
+  document.getElementById('cpnl-summary').innerHTML =
+    card('Inventory Sales', fmt(invRev), '', soldItems.length + ' items') +
+    card('Jobs Revenue', fmt(jobRev), '', doneJobs.length + ' jobs') +
+    card('Total Revenue', fmt(totalRev)) +
+    card('Total Costs + Fees', fmt(totalCost + totalFees), '#ef4444') +
+    card('Net Profit', fmt(totalProfit), totalProfit >= 0 ? '#22c55e' : '#ef4444',
+         totalRev > 0 ? Math.round(totalProfit / totalRev * 100) + '% margin' : '');
+
+  // Monthly combined breakdown
+  var byMonth = {};
+  soldItems.forEach(function(i) {
+    var d = (i.saleDate || i.dateIn || '').slice(0,7) || 'Unknown';
+    if (!byMonth[d]) byMonth[d] = {invRev:0,invCost:0,invFees:0,jobRev:0,jobCost:0,jobFees:0};
+    byMonth[d].invRev  += +i.salePrice||0;
+    byMonth[d].invCost += (+i.buyPrice||0) + (+i.postageIn||0) + (+i.partsCost||0);
+    byMonth[d].invFees += +i.feesPost||0;
+  });
+  doneJobs.forEach(function(j) {
+    var d = (j.dateCompleted || j.dateIn || '').slice(0,7) || 'Unknown';
+    if (!byMonth[d]) byMonth[d] = {invRev:0,invCost:0,invFees:0,jobRev:0,jobCost:0,jobFees:0};
+    byMonth[d].jobRev  += +j.quotedPrice||0;
+    byMonth[d].jobCost += +j.partsCost||0;
+    byMonth[d].jobFees += (+j.quotedPrice||0) * (j.paymentMethod==='Card'?0.0175:j.paymentMethod==='SumUp'?0.0169:0);
+  });
+  var months = Object.keys(byMonth).sort().reverse();
+  function fmtM(m) {
+    if (m === 'Unknown') return m;
+    var p = m.split('-'), n = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return n[+p[1]] + ' ' + p[0];
+  }
+  document.getElementById('cpnl-monthly-tbody').innerHTML = months.map(function(m) {
+    var r = byMonth[m];
+    var rev = r.invRev + r.jobRev, cost = r.invCost + r.jobCost, fees = r.invFees + r.jobFees, net = rev - cost - fees;
+    return '<tr style="border-top:1px solid var(--border)">'
+      + '<td style="padding:5px 6px;font-weight:500">' + fmtM(m) + '</td>'
+      + '<td style="padding:5px 6px;text-align:right;color:var(--muted)">' + fmt(r.invRev) + '</td>'
+      + '<td style="padding:5px 6px;text-align:right;color:var(--muted)">' + fmt(r.jobRev) + '</td>'
+      + '<td style="padding:5px 6px;text-align:right">' + fmt(rev) + '</td>'
+      + '<td style="padding:5px 6px;text-align:right;color:var(--muted)">' + fmt(cost) + '</td>'
+      + '<td style="padding:5px 6px;text-align:right;color:#ef4444">' + fmt(fees) + '</td>'
+      + '<td style="padding:5px 6px;text-align:right;font-weight:600;color:' + (net>=0?'#22c55e':'#ef4444') + '">' + fmt(net) + '</td>'
+      + '</tr>';
+  }).join('') + (months.length > 1 ? '<tr style="border-top:2px solid var(--border);font-weight:600">'
+    + '<td style="padding:5px 6px">Total</td>'
+    + '<td style="padding:5px 6px;text-align:right;color:var(--muted)">' + fmt(invRev) + '</td>'
+    + '<td style="padding:5px 6px;text-align:right;color:var(--muted)">' + fmt(jobRev) + '</td>'
+    + '<td style="padding:5px 6px;text-align:right">' + fmt(totalRev) + '</td>'
+    + '<td style="padding:5px 6px;text-align:right;color:var(--muted)">' + fmt(totalCost) + '</td>'
+    + '<td style="padding:5px 6px;text-align:right;color:#ef4444">' + fmt(totalFees) + '</td>'
+    + '<td style="padding:5px 6px;text-align:right;color:' + (totalProfit>=0?'#22c55e':'#ef4444') + '">' + fmt(totalProfit) + '</td>'
+    + '</tr>' : '');
+
+  // Inventory per-item table
+  document.getElementById('cpnl-inv-tbody').innerHTML = soldItems.slice().reverse().map(function(i) {
+    var cost = (+i.buyPrice||0) + (+i.postageIn||0) + (+i.partsCost||0);
+    var net  = (+i.salePrice||0) - (+i.feesPost||0) - cost;
+    return '<tr style="border-top:1px solid var(--border)">'
+      + '<td style="padding:5px 6px;color:var(--muted)">#' + String(i.num).padStart(3,'0') + '</td>'
+      + '<td style="padding:5px 6px">' + (i.brand||'') + ' ' + (i.model||i.category||'') + '</td>'
+      + '<td style="padding:5px 6px;color:var(--muted)">' + (i.saleDate||i.dateIn||'—') + '</td>'
+      + '<td style="padding:5px 6px;text-align:right">' + fmt(i.salePrice||0) + '</td>'
+      + '<td style="padding:5px 6px;text-align:right;color:var(--muted)">' + fmt(cost) + '</td>'
+      + '<td style="padding:5px 6px;text-align:right;color:#ef4444">' + (i.feesPost > 0 ? fmt(i.feesPost) : '—') + '</td>'
+      + '<td style="padding:5px 6px;text-align:right;font-weight:600;color:' + (net>=0?'#22c55e':'#ef4444') + '">' + fmt(net) + '</td>'
+      + '</tr>';
+  }).join('');
+
+  // Jobs per-job table
+  document.getElementById('cpnl-jobs-tbody').innerHTML = doneJobs.slice().reverse().map(function(j) {
+    var fees = (+j.quotedPrice||0) * (j.paymentMethod==='Card'?0.0175:j.paymentMethod==='SumUp'?0.0169:0);
+    var profit = (+j.quotedPrice||0) - (+j.partsCost||0) - fees;
+    return '<tr style="border-top:1px solid var(--border)">'
+      + '<td style="padding:5px 6px;color:var(--muted)">#J' + String(j.num).padStart(3,'0') + '</td>'
+      + '<td style="padding:5px 6px">' + (j.customerName||'') + '</td>'
+      + '<td style="padding:5px 6px;color:var(--muted);font-size:0.75rem">' + (j.device||'') + '</td>'
+      + '<td style="padding:5px 6px;color:var(--muted)">' + (j.dateCompleted||j.dateIn||'') + '</td>'
+      + '<td style="padding:5px 6px;text-align:right">' + fmt(j.quotedPrice||0) + '</td>'
+      + '<td style="padding:5px 6px;text-align:right;color:var(--muted)">' + fmt(j.partsCost||0) + '</td>'
+      + '<td style="padding:5px 6px;text-align:right;color:#ef4444">' + (fees > 0 ? fmt(fees) : '—') + '</td>'
+      + '<td style="padding:5px 6px;text-align:right;font-weight:600;color:' + (profit>=0?'#22c55e':'#ef4444') + '">' + fmt(profit) + '</td>'
+      + '</tr>';
+  }).join('');
+}
 
 
 
