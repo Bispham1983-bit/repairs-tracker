@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Respawn Repairs</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0f1117;
+      --surface: #1a1d27;
+      --border:  #2d3148;
+      --accent:  #7c6ff7;
+      --text:    #e2e8f0;
+      --muted:   #64748b;
+      --green:   #22c55e;
+      --blue:    #3b82f6;
+      --amber:   #f59e0b;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+
+    .logo {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+
+    .tagline {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 40px;
+      text-align: center;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      width: 100%;
+      max-width: 520px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px 20px 24px;
+      text-decoration: none;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+      cursor: pointer;
+    }
+
+    .card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(124,111,247,0.15);
+    }
+
+    .card:active { transform: translateY(0); }
+
+    .card-icon {
+      font-size: 2rem;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+    }
+
+    .card-desc {
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .card-badge {
+      display: inline-block;
+      margin-top: 4px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 99px;
+      background: rgba(124,111,247,0.15);
+      color: var(--accent);
+      border: 1px solid rgba(124,111,247,0.3);
+    }
+
+    .card.green  { --badge-bg: rgba(34,197,94,0.12); --badge-color: #22c55e; --badge-border: rgba(34,197,94,0.3); }
+    .card.blue   { --badge-bg: rgba(59,130,246,0.12); --badge-color: #60a5fa; --badge-border: rgba(59,130,246,0.3); }
+    .card.amber  { --badge-bg: rgba(245,158,11,0.12); --badge-color: #f59e0b; --badge-border: rgba(245,158,11,0.3); }
+    .card.purple { --badge-bg: rgba(124,111,247,0.15); --badge-color: #7c6ff7; --badge-border: rgba(124,111,247,0.3); }
+
+    .card.green .card-badge  { background: var(--badge-bg); color: var(--badge-color); border-color: var(--badge-border); }
+    .card.blue .card-badge   { background: var(--badge-bg); color: var(--badge-color); border-color: var(--badge-border); }
+    .card.amber .card-badge  { background: var(--badge-bg); color: var(--badge-color); border-color: var(--badge-border); }
+
+    .card.green:hover  { border-color: #22c55e; box-shadow: 0 8px 24px rgba(34,197,94,0.12); }
+    .card.blue:hover   { border-color: #3b82f6; box-shadow: 0 8px 24px rgba(59,130,246,0.12); }
+    .card.amber:hover  { border-color: #f59e0b; box-shadow: 0 8px 24px rgba(245,158,11,0.12); }
+
+    .footer {
+      margin-top: 36px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-align: center;
+    }
+    .footer a { color: var(--muted); text-decoration: none; }
+    .footer a:hover { color: var(--text); }
+
+    @media (max-width: 420px) {
+      .grid { grid-template-columns: 1fr; max-width: 320px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="logo">⚡ Respawn Repairs</div>
+  <div class="tagline">respawnrepairs.uk · Harborne, Birmingham</div>
+
+  <div class="grid">
+
+    <a class="card green" href="/index.html?view=inventory">
+      <div class="card-icon">📦</div>
+      <div class="card-title">Inventory</div>
+      <div class="card-desc">Stock in/out, item tracking, buy &amp; sale prices.</div>
+      <span class="card-badge">Stock</span>
+    </a>
+
+    <a class="card blue" href="/index.html?view=jobs">
+      <div class="card-icon">🔧</div>
+      <div class="card-title">Repair Jobs</div>
+      <div class="card-desc">Log faults, track repairs, invoicing &amp; payment.</div>
+      <span class="card-badge">Jobs</span>
+    </a>
+
+    <a class="card amber" href="/index.html?view=clients">
+      <div class="card-icon">👥</div>
+      <div class="card-title">Clients</div>
+      <div class="card-desc">Customer records, contact details &amp; repair history.</div>
+      <span class="card-badge">CRM</span>
+    </a>
+
+    <a class="card purple" href="/index.html?view=pnl">
+      <div class="card-icon">📊</div>
+      <div class="card-title">P&amp;L</div>
+      <div class="card-desc">Combined profit &amp; loss across inventory and jobs.</div>
+      <span class="card-badge">Reports</span>
+    </a>
+
+  </div>
+
+  <div class="footer">
+    <a href="/logout">Sign out</a>
+  </div>
+
+</body>
+</html>

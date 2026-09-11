@@ -2818,6 +2818,12 @@ document.getElementById('btn-view-jobs').addEventListener('click', () => switchV
 document.getElementById('btn-view-clients').addEventListener('click', () => switchView('clients'));
 document.getElementById('btn-view-pnl').addEventListener('click', () => switchView('pnl'));
 
+// Deep-link: honour ?view= query param from landing page
+(function() {
+  const v = new URLSearchParams(window.location.search).get('view');
+  if (v && ['inventory','jobs','clients','pnl'].includes(v)) switchView(v);
+})();
+
 // ── Combined P&L ──────────────────────────────────────────
 var cpnlTab = 'monthly';
 function cpnlSetTab(tab) {

@@ -47,6 +47,11 @@ app.get('/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/login'));
 });
 
+// ── Landing page ─────────────────────────────────────────────────
+app.get('/', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'home.html'));
+});
+
 // ── Protected static files ───────────────────────────────────────
 app.use(requireAuth, express.static(path.join(__dirname, 'public')));
 
