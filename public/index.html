@@ -769,9 +769,9 @@
         </div>
       </div>
 
-      <!-- Quick P&L strip -->
+      <!-- Costs strip -->
       <div style="border-top:1px solid #333;margin-top:4px;padding:12px 0 4px">
-        <div class="field-section" style="margin-top:0">Quick P&amp;L</div>
+        <div class="field-section" style="margin-top:0">Costs In</div>
         <div class="field-grid two-col">
           <div class="field">
             <label>Paid (£)</label>
@@ -785,19 +785,50 @@
             <label>Parts Cost (£)</label>
             <input type="number" data-field="partsCost" min="0" step="0.01" placeholder="0.00">
           </div>
-          <div class="field">
-            <label>Est. Sale Price (£)</label>
-            <input type="number" data-field="estSalePrice" min="0" step="0.01" placeholder="0.00">
-          </div>
           <div class="field" style="display:flex;flex-direction:column;justify-content:flex-end">
-            <label>Est. Profit</label>
-            <div id="quick-profit" style="font-size:1.1rem;font-weight:700;padding:6px 0">—</div>
+            <label style="color:var(--muted)">Total Cost In</label>
+            <div id="quick-cost" style="font-size:1.1rem;font-weight:700;padding:6px 0;color:var(--muted)">—</div>
           </div>
         </div>
       </div>
 
       <!-- Tab: Sale Info -->
       <div class="tab-pane" id="tab-sale">
+
+        <!-- P&L Comparison -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0 16px">
+
+          <!-- Estimate card -->
+          <div style="background:rgba(59,130,246,0.07);border:1px solid rgba(59,130,246,0.25);border-radius:12px;padding:14px 16px">
+            <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.07em;color:#60a5fa;margin-bottom:12px;text-transform:uppercase">Estimate</div>
+            <div class="field">
+              <label>Est. Sale Price (£)</label>
+              <input type="number" data-field="estSalePrice" min="0" step="0.01" placeholder="0.00">
+            </div>
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(59,130,246,0.15)">
+              <div style="font-size:0.72rem;color:var(--muted);margin-bottom:3px">Est. Profit</div>
+              <div id="sale-est-profit" style="font-size:1.3rem;font-weight:800;letter-spacing:-0.5px">—</div>
+            </div>
+          </div>
+
+          <!-- Actual card -->
+          <div style="background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.25);border-radius:12px;padding:14px 16px">
+            <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.07em;color:#22c55e;margin-bottom:12px;text-transform:uppercase">Actual</div>
+            <div class="field">
+              <label>Sale Price (£)</label>
+              <input type="number" data-field="salePrice" min="0" step="0.01" placeholder="0.00">
+            </div>
+            <div class="field" style="margin-top:8px">
+              <label>Fees + Postage Out (£)</label>
+              <input type="number" data-field="feesPost" min="0" step="0.01" placeholder="0.00">
+            </div>
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(34,197,94,0.15)">
+              <div style="font-size:0.72rem;color:var(--muted);margin-bottom:3px">Net Profit</div>
+              <div id="sale-net-profit" style="font-size:1.3rem;font-weight:800;letter-spacing:-0.5px">—</div>
+            </div>
+          </div>
+        </div>
+
         <div class="field-section">Listing</div>
         <div class="field-grid">
           <div class="field">
@@ -819,6 +850,10 @@
             <label>eBay Item #</label>
             <input type="text" data-field="ebayItemNum">
           </div>
+          <div class="field">
+            <label>Sale Date</label>
+            <input type="date" data-field="saleDate">
+          </div>
         </div>
 
         <div class="field-section">Listed On</div>
@@ -828,22 +863,6 @@
           <div class="checkbox-row"><input type="checkbox" id="chk-fb" data-field="listedFacebook"><label for="chk-fb">Facebook</label></div>
           <div class="checkbox-row"><input type="checkbox" id="chk-cex" data-field="listedCEX"><label for="chk-cex">CEX</label></div>
           <div class="checkbox-row"><input type="checkbox" id="chk-other" data-field="listedOther"><label for="chk-other">Other</label></div>
-        </div>
-
-        <div class="field-section">Sale</div>
-        <div class="field-grid">
-          <div class="field">
-            <label>Sale Date</label>
-            <input type="date" data-field="saleDate">
-          </div>
-          <div class="field">
-            <label>Sale Price (£)</label>
-            <input type="number" data-field="salePrice" min="0" step="0.01">
-          </div>
-          <div class="field">
-            <label>Fees + Postage Out (£)</label>
-            <input type="number" data-field="feesPost" min="0" step="0.01">
-          </div>
         </div>
       </div>
 
@@ -1603,14 +1622,39 @@ document.getElementById('btn-discard').addEventListener('click', () => {
 
 // ── P&L display ──────────────────────────────────────────
 function updateQuickProfit(item) {
-  const el = document.getElementById('quick-profit');
-  if (!el) return;
-  const cost   = (+item.buyPrice || 0) + (+item.postageIn || 0) + (+item.partsCost || 0);
-  const estSale = +item.estSalePrice || 0;
-  if (!cost && !estSale) { el.textContent = '—'; el.style.color = ''; return; }
-  const profit = estSale - cost;
-  el.textContent = (profit >= 0 ? '+' : '') + '£' + profit.toFixed(2);
-  el.style.color = profit >= 0 ? 'var(--green)' : 'var(--red)';
+  const cost     = (+item.buyPrice || 0) + (+item.postageIn || 0) + (+item.partsCost || 0);
+  const estSale  = +item.estSalePrice || 0;
+  const estProfit = estSale - cost;
+  const hasSale   = !!(+item.salePrice);
+  const netProfit = (+item.salePrice || 0) - (+item.feesPost || 0) - cost;
+
+  // Costs strip — total cost display
+  const costEl = document.getElementById('quick-cost');
+  if (costEl) {
+    costEl.textContent = cost ? '£' + cost.toFixed(2) : '—';
+  }
+
+  // Sale Info — Estimate card
+  const estEl = document.getElementById('sale-est-profit');
+  if (estEl) {
+    if (!cost && !estSale) {
+      estEl.textContent = '—'; estEl.style.color = '';
+    } else {
+      estEl.textContent = (estProfit >= 0 ? '+' : '') + '£' + Math.abs(estProfit).toFixed(2);
+      estEl.style.color = estProfit >= 0 ? 'var(--green)' : 'var(--red)';
+    }
+  }
+
+  // Sale Info — Actual card
+  const netEl = document.getElementById('sale-net-profit');
+  if (netEl) {
+    if (!hasSale) {
+      netEl.textContent = '—'; netEl.style.color = '';
+    } else {
+      netEl.textContent = (netProfit >= 0 ? '+' : '') + '£' + Math.abs(netProfit).toFixed(2);
+      netEl.style.color = netProfit >= 0 ? 'var(--green)' : 'var(--red)';
+    }
+  }
 }
 
 function updatePLDisplay(item) {
