@@ -2918,7 +2918,13 @@ function renderCombinedPnl() {
       + '<td style="padding:5px 6px;text-align:right;color:#ef4444">' + (i.feesPost > 0 ? fmt(i.feesPost) : '—') + '</td>'
       + '<td style="padding:5px 6px;text-align:right;font-weight:600;color:' + (net>=0?'#22c55e':'#ef4444') + '">' + fmt(net) + '</td>'
       + '</tr>';
-  }).join('');
+  }).join('') + (soldItems.length ? '<tr style="border-top:2px solid var(--border);font-weight:600;background:var(--surface2)">'
+    + '<td colspan="3" style="padding:6px 6px;color:var(--muted)">Totals — ' + soldItems.length + ' items</td>'
+    + '<td style="padding:6px 6px;text-align:right">' + fmt(invRev) + '</td>'
+    + '<td style="padding:6px 6px;text-align:right;color:var(--muted)">' + fmt(invCost) + '</td>'
+    + '<td style="padding:6px 6px;text-align:right;color:#ef4444">' + fmt(invFees) + '</td>'
+    + '<td style="padding:6px 6px;text-align:right;color:' + (invProfit>=0?'#22c55e':'#ef4444') + '">' + fmt(invProfit) + '</td>'
+    + '</tr>' : '');
 
   // Jobs per-job table
   document.getElementById('cpnl-jobs-tbody').innerHTML = doneJobs.slice().reverse().map(function(j) {
@@ -2934,7 +2940,13 @@ function renderCombinedPnl() {
       + '<td style="padding:5px 6px;text-align:right;color:#ef4444">' + (fees > 0 ? fmt(fees) : '—') + '</td>'
       + '<td style="padding:5px 6px;text-align:right;font-weight:600;color:' + (profit>=0?'#22c55e':'#ef4444') + '">' + fmt(profit) + '</td>'
       + '</tr>';
-  }).join('');
+  }).join('') + (doneJobs.length ? '<tr style="border-top:2px solid var(--border);font-weight:600;background:var(--surface2)">'
+    + '<td colspan="4" style="padding:6px 6px;color:var(--muted)">Totals — ' + doneJobs.length + ' jobs</td>'
+    + '<td style="padding:6px 6px;text-align:right">' + fmt(jobRev) + '</td>'
+    + '<td style="padding:6px 6px;text-align:right;color:var(--muted)">' + fmt(jobCost) + '</td>'
+    + '<td style="padding:6px 6px;text-align:right;color:#ef4444">' + fmt(jobFees) + '</td>'
+    + '<td style="padding:6px 6px;text-align:right;color:' + (jobProfit>=0?'#22c55e':'#ef4444') + '">' + fmt(jobProfit) + '</td>'
+    + '</tr>' : '');
 }
 
 
