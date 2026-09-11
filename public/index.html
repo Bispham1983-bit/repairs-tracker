@@ -688,6 +688,7 @@
       <!-- Tabs -->
       <div id="detail-tabs">
         <button class="tab-btn active" data-tab="details">Details</button>
+        <button class="tab-btn" data-tab="parts">Parts &amp; Labour</button>
         <button class="tab-btn" data-tab="sale">Sale Info</button>
       </div>
 
@@ -790,6 +791,23 @@
             <div id="quick-cost" style="font-size:1.1rem;font-weight:700;padding:6px 0;color:var(--muted)">—</div>
           </div>
         </div>
+      </div>
+
+      <!-- Tab: Parts & Labour -->
+      <div class="tab-pane" id="tab-parts">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin:12px 0 10px">
+          <span style="font-weight:600;font-size:0.9rem;color:var(--text)">Parts &amp; Labour Lines</span>
+        </div>
+        <div id="item-parts-lines" style="margin-bottom:8px"></div>
+        <button onclick="addItemPartsLine()" style="background:transparent;border:1px dashed var(--border);color:var(--muted);padding:5px 12px;border-radius:6px;cursor:pointer;font-size:0.82rem;width:100%;margin-bottom:10px">+ Add line</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <span style="font-size:0.85rem;color:var(--muted)">Total: <span id="item-parts-total" style="font-size:1.1rem;font-weight:700;color:var(--green)">£0.00</span></span>
+          <div style="display:flex;align-items:center;gap:10px">
+            <button onclick="saveItemParts()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 14px;border-radius:6px;cursor:pointer;font-size:0.82rem">💾 Save</button>
+            <span id="item-parts-save-indicator" style="font-size:0.75rem;color:var(--green)"></span>
+          </div>
+        </div>
+        <p style="margin-top:14px;font-size:0.75rem;color:var(--muted)">Parts total automatically syncs to <strong>Parts Cost</strong> in the Costs strip.</p>
       </div>
 
       <!-- Tab: Sale Info -->
@@ -1510,6 +1528,7 @@ function renderDetail() {
   populateFields(item);
   updatePLDisplay(item);
   updateQuickProfit(item);
+  loadItemParts(item);
 }
 
 // ── Action bar ──────────────────────────────────────────
@@ -3011,6 +3030,83 @@ function renderCombinedPnl() {
 // ═══════════════════════════════════════════════════════
 //  INVOICE
 // ═══════════════════════════════════════════════════════
+// ── Item Parts & Labour ───────────────────────────────────
+let itemPartsLines = [];
+let _itemPartsSaveTimer = null;
+
+function renderItemPartsLines() {
+  const container = document.getElementById('item-parts-lines');
+  if (!container) return;
+  container.innerHTML = '';
+  itemPartsLines.forEach(function(line, i) {
+    const isParts = (line.type || 'parts') === 'parts';
+    const row = document.createElement('div');
+    row.style.cssText = 'display:grid;grid-template-columns:auto 1fr 90px 28px;gap:6px;align-items:center;margin-bottom:6px';
+    row.innerHTML =
+      `<button onclick="itemPartsLines[${i}].type=itemPartsLines[${i}].type==='parts'?'labour':'parts';renderItemPartsLines();autoSaveItemParts()"
+        style="background:${isParts?'rgba(59,130,246,0.15)':'rgba(100,116,139,0.15)'};border:1px solid ${isParts?'rgba(59,130,246,0.3)':'rgba(100,116,139,0.3)'};color:${isParts?'#60a5fa':'var(--muted)'};border-radius:6px;padding:3px 8px;cursor:pointer;font-size:0.7rem;font-weight:600;white-space:nowrap">${isParts?'Part':'Labour'}</button>
+      <input value="${(line.desc||'').replace(/"/g,'&quot;')}" placeholder="Description" onchange="itemPartsLines[${i}].desc=this.value;autoSaveItemParts()"
+        style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:0.85rem;width:100%">
+      <input type="number" value="${line.amount||''}" min="0" step="0.01" placeholder="0.00" onchange="itemPartsLines[${i}].amount=parseFloat(this.value)||0;updateItemPartsTotal();autoSaveItemParts()"
+        style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:0.85rem;width:100%">
+      <button onclick="itemPartsLines.splice(${i},1);renderItemPartsLines();autoSaveItemParts()" style="background:transparent;border:none;color:#ef4444;cursor:pointer;font-size:1rem;padding:0">✕</button>`;
+    container.appendChild(row);
+  });
+  updateItemPartsTotal();
+}
+
+function updateItemPartsTotal() {
+  const partsTotal  = itemPartsLines.filter(l => (l.type||'parts')==='parts').reduce((s,l)  => s+(parseFloat(l.amount)||0), 0);
+  const labourTotal = itemPartsLines.filter(l => (l.type||'parts')==='labour').reduce((s,l) => s+(parseFloat(l.amount)||0), 0);
+  const total = partsTotal + labourTotal;
+  const el = document.getElementById('item-parts-total');
+  if (!el) return;
+  if (partsTotal && labourTotal) {
+    el.textContent = 'Labour £' + labourTotal.toFixed(2) + ' + Parts £' + partsTotal.toFixed(2) + ' = £' + total.toFixed(2);
+  } else {
+    el.textContent = '£' + total.toFixed(2);
+  }
+}
+
+function addItemPartsLine(desc, amount, type) {
+  itemPartsLines.push({ desc: desc || '', amount: parseFloat(amount) || 0, type: type || 'parts' });
+  renderItemPartsLines();
+  autoSaveItemParts();
+}
+
+function loadItemParts(item) {
+  try { itemPartsLines = JSON.parse(item.partsData || '[]'); } catch(e) { itemPartsLines = []; }
+  // Seed from partsCost if no saved lines yet
+  if (!itemPartsLines.length && item.partsCost) {
+    itemPartsLines.push({ desc: 'Parts', amount: +item.partsCost, type: 'parts' });
+  }
+  renderItemPartsLines();
+}
+
+function autoSaveItemParts() {
+  clearTimeout(_itemPartsSaveTimer);
+  _itemPartsSaveTimer = setTimeout(function() { saveItemParts(true); }, 900);
+}
+
+async function saveItemParts(silent) {
+  if (!selectedId) return;
+  const partsTotal = itemPartsLines.filter(l => (l.type||'parts')==='parts').reduce((s,l) => s+(parseFloat(l.amount)||0), 0);
+  await api('PUT', '/api/items/' + selectedId + '/parts', { items: itemPartsLines });
+  // Sync parts total → partsCost field
+  const updated = await api('PUT', '/api/items/' + selectedId, { partsCost: partsTotal });
+  mergeItem(updated);
+  const pcEl = document.querySelector('#item-detail [data-field="partsCost"]');
+  if (pcEl) pcEl.value = partsTotal || '';
+  const cur = items.find(i => i.id === selectedId) || {};
+  updateQuickProfit({ ...cur, partsCost: partsTotal });
+  if (silent) {
+    const ind = document.getElementById('item-parts-save-indicator');
+    if (ind) { ind.textContent = 'Saved ✓'; clearTimeout(ind._t); ind._t = setTimeout(() => { if(ind) ind.textContent = ''; }, 2000); }
+  } else {
+    showToast('Parts saved');
+  }
+}
+
 let invoiceLines = [];
 
 function renderInvoiceLines() {

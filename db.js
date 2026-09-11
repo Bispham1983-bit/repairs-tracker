@@ -117,7 +117,7 @@ const ITEM_COLS = [
   'faultDesc','repairNotes','hoursSpent','buyPrice','postageIn','partsCost',
   'estSalePrice','estProfit','saleVenue','listedEbay','listedVinted',
   'listedFacebook','listedCEX','listedOther','recommendedVenue','ebayItemNum','saleDate',
-  'salePrice','feesPost','netProfit','margin',
+  'salePrice','feesPost','netProfit','margin','partsData',
 ];
 
 const INSERT_STMT = db.prepare(`
@@ -152,6 +152,12 @@ module.exports = {
 
   deleteItem(id) {
     db.prepare('DELETE FROM items WHERE id=?').run(id);
+  },
+
+  saveItemParts(id, items) {
+    db.prepare("UPDATE items SET partsData=?, updatedAt=datetime('now') WHERE id=?")
+      .run(JSON.stringify(items), id);
+    return this.getItem(id);
   },
 
   getNextNum() {
@@ -297,6 +303,9 @@ module.exports = {
     db.prepare("INSERT OR REPLACE INTO meta (key,value) VALUES ('nextNum',?)").run(String(n));
   },
 };
+
+// Add partsData column to items if not present
+try { db.prepare("ALTER TABLE items ADD COLUMN partsData TEXT DEFAULT '[]'").run(); } catch(e) {}
 
 // Add new columns if they don't exist yet (safe on existing DBs)
 ['dateReceived','datePostedBack','paymentMethod'].forEach(col => {

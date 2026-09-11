@@ -82,6 +82,13 @@ app.delete('/api/items/:id', (req, res) => {
   catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+app.put('/api/items/:id/parts', (req, res) => {
+  try {
+    const item = db.saveItemParts(req.params.id, req.body.items || []);
+    res.json(item);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── Start ────────────────────────────────────────────────────────
 // ── Jobs API ─────────────────────────────────────────────
 app.get('/api/jobs', (req, res) => {
