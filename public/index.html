@@ -3153,8 +3153,9 @@ async function selectClient(id) {
   const initials = client.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
   document.getElementById('cd-avatar').textContent = initials;
   document.getElementById('cd-name').textContent = client.name;
-  document.getElementById('cd-firstname').value = client.firstName || '';
-  document.getElementById('cd-lastname').value = client.lastName || '';
+  const nameParts = (client.name || '').trim().split(/\s+/);
+  document.getElementById('cd-firstname').value = client.firstName || nameParts[0] || '';
+  document.getElementById('cd-lastname').value  = client.lastName  || (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '');
   document.getElementById('cd-phone').value = client.phone || '';
   document.getElementById('cd-email').value = client.email || '';
   document.getElementById('cd-address').value = client.address || '';
