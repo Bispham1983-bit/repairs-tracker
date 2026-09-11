@@ -2013,7 +2013,8 @@ document.getElementById('search-box').addEventListener('input', e => {
     <h2 style="margin:0 0 16px">New Repair Job</h2>
     <div class="field-grid two-col">
       <div class="field"><label>Date In</label><input type="date" id="nj-datein"></div>
-      <div class="field"><label>Customer Name</label><input type="text" id="nj-name" placeholder="Name" list="client-names-datalist" autocomplete="off"><datalist id="client-names-datalist"></datalist></div>
+      <div class="field"><label>First Name</label><input type="text" id="nj-firstname" placeholder="First name" list="client-names-datalist" autocomplete="off"><datalist id="client-names-datalist"></datalist></div>
+      <div class="field"><label>Last Name</label><input type="text" id="nj-lastname" placeholder="Last name"></div>
       <div class="field span-all"><label>Contact (phone / email)</label><input type="text" id="nj-contact" placeholder="07700… or email@…"></div>
       <div class="field span-all"><label>Device</label><input type="text" id="nj-device" list="device-list" placeholder="Select or type a device…" autocomplete="off"><datalist id="device-list"><option value="PS5 DualSense Controller"><option value="PS4 DualShock 4 Controller"><option value="Xbox Series X/S Controller"><option value="Xbox One Controller"><option value="Nintendo Switch Pro Controller"><option value="Nintendo Switch Joy-Con (Left)"><option value="Nintendo Switch Joy-Con (Right)"><option value="Nintendo Switch Joy-Con Pair"><option value="Xbox 360 Controller"><option value="PS3 DualShock 3 Controller"><option value="Nintendo Switch OLED"><option value="Nintendo Switch Lite"><option value="Nintendo Switch"><option value="PS5 Console"><option value="PS4 Console"><option value="PS4 Slim Console"><option value="Xbox Series X Console"><option value="Xbox Series S Console"><option value="Xbox One Console"><option value="Steam Deck"></datalist></div>
     </div>
@@ -2723,7 +2724,8 @@ document.getElementById('btn-pnl').addEventListener('click', function() {
 
 document.getElementById('btn-add-job').addEventListener('click', () => {
   document.getElementById('nj-datein').value = new Date().toISOString().slice(0,10);
-  document.getElementById('nj-name').value = '';
+  document.getElementById('nj-firstname').value = '';
+  document.getElementById('nj-lastname').value = '';
   document.getElementById('nj-contact').value = '';
   document.getElementById('nj-device').value = '';
   document.getElementById('nj-fault-notes').value = '';
@@ -2749,8 +2751,10 @@ document.getElementById('nj-confirm').addEventListener('click', async () => {
   const btn = document.getElementById('nj-confirm');
   if (btn.disabled) return;
   btn.disabled = true; btn.textContent = 'Creating…';
-  const name = document.getElementById('nj-name').value.trim();
-  if (!name) { alert('Customer name is required.'); return; }
+  const firstName = document.getElementById('nj-firstname').value.trim();
+  const lastName  = document.getElementById('nj-lastname').value.trim();
+  const name = [firstName, lastName].filter(Boolean).join(' ');
+  if (!firstName) { alert('Customer first name is required.'); return; }
   const faults = [...document.querySelectorAll('#nj-fault-area input[type=checkbox]:checked')]
     .map(cb => cb.value).join(', ');
   const data = {
@@ -3092,23 +3096,28 @@ function populateClientDatalist() {
   dl.innerHTML = '';
   clients.forEach(function(c) {
     var opt = document.createElement('option');
-    opt.value = c.name;
+    opt.value = c.firstName || c.name.split(' ')[0];
+    opt.label = c.name;
     dl.appendChild(opt);
   });
 }
 
 function setupCustomerNameAutofill() {
-  var inp = document.getElementById('nj-name');
+  var inp = document.getElementById('nj-firstname');
   if (!inp || inp._autofillReady) return;
   inp._autofillReady = true;
   inp.addEventListener('input', function() {
     var val = this.value.trim();
-    var match = clients.find(function(c) { return c.name.toLowerCase() === val.toLowerCase(); });
+    // Try to match on first name alone or full name
+    var match = clients.find(function(c) {
+      return c.name.toLowerCase() === val.toLowerCase()
+          || (c.firstName||'').toLowerCase() === val.toLowerCase();
+    });
     if (match) {
+      var lastInp = document.getElementById('nj-lastname');
+      if (lastInp && !lastInp.value) lastInp.value = match.lastName || '';
       var contactInp = document.getElementById('nj-contact');
-      if (contactInp && !contactInp.value) {
-        contactInp.value = match.phone || match.email || '';
-      }
+      if (contactInp && !contactInp.value) contactInp.value = match.phone || match.email || '';
     }
   });
 }
@@ -3156,8 +3165,13 @@ async function selectClient(id) {
   const nameParts = (client.name || '').trim().split(/\s+/);
   document.getElementById('cd-firstname').value = client.firstName || nameParts[0] || '';
   document.getElementById('cd-lastname').value  = client.lastName  || (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '');
-  document.getElementById('cd-phone').value = client.phone || '';
-  document.getElementById('cd-email').value = client.email || '';
+  // Fall back to contact info from any linked job
+  const linkedJob = jobs.find(function(j) { return j.clientId === client.id && j.customerContact; });
+  const fallbackContact = linkedJob ? linkedJob.customerContact : '';
+  const isPhone = fallbackContact && !fallbackContact.includes('@');
+  const isEmail = fallbackContact && fallbackContact.includes('@');
+  document.getElementById('cd-phone').value = client.phone || (isPhone ? fallbackContact : '');
+  document.getElementById('cd-email').value = client.email || (isEmail ? fallbackContact : '');
   document.getElementById('cd-address').value = client.address || '';
   document.getElementById('cd-notes').value = client.notes || '';
   const vipBadge = document.getElementById('cd-vip');

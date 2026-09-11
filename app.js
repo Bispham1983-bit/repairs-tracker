@@ -84,7 +84,16 @@ app.get('/api/jobs', (req, res) => {
 });
 
 app.post('/api/jobs', (req, res) => {
-  const client = req.body.customerName ? db.getOrCreateClient(req.body.customerName) : null;
+  const name    = (req.body.customerName || '').trim();
+  const contact = (req.body.customerContact || '').trim();
+  const parts   = name.split(/\s+/);
+  const extra   = {
+    firstName: parts[0] || '',
+    lastName:  parts.slice(1).join(' ') || '',
+    phone:     contact && !contact.includes('@') ? contact : '',
+    email:     contact && contact.includes('@')  ? contact : '',
+  };
+  const client = name ? db.getOrCreateClient(name, extra) : null;
   const job = db.createJob({ ...req.body, clientId: client ? client.id : null });
   res.json(job);
 });

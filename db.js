@@ -238,14 +238,28 @@ module.exports = {
     return c ? {...c, isVip: !!c.isVip} : null;
   },
 
-  getOrCreateClient(name) {
+  getOrCreateClient(name, extra) {
     if (!name || !name.trim()) return null;
+    extra = extra || {};
     let client = db.prepare("SELECT * FROM clients WHERE name=?").get(name.trim());
     if (!client) {
       const num = db.prepare("SELECT COALESCE(MAX(num),0)+1 AS n FROM clients").get().n;
       const id  = 'client-' + String(num).padStart(3,'0');
-      db.prepare("INSERT INTO clients (id,num,name) VALUES (?,?,?)").run(id, num, name.trim());
+      db.prepare("INSERT INTO clients (id,num,name,phone,email,firstName,lastName) VALUES (?,?,?,?,?,?,?)")
+        .run(id, num, name.trim(), extra.phone||'', extra.email||'', extra.firstName||'', extra.lastName||'');
       client = db.prepare('SELECT * FROM clients WHERE id=?').get(id);
+    } else {
+      // Fill in any empty fields we now have data for
+      const updates = {};
+      if (extra.phone     && !client.phone)     updates.phone     = extra.phone;
+      if (extra.email     && !client.email)     updates.email     = extra.email;
+      if (extra.firstName && !client.firstName) updates.firstName = extra.firstName;
+      if (extra.lastName  && !client.lastName)  updates.lastName  = extra.lastName;
+      if (Object.keys(updates).length) {
+        const sql = 'UPDATE clients SET ' + Object.keys(updates).map(k => k+'=@'+k).join(',') + ", updatedAt=datetime('now') WHERE id=@id";
+        db.prepare(sql).run({...updates, id: client.id});
+        client = db.prepare('SELECT * FROM clients WHERE id=?').get(client.id);
+      }
     }
     return {...client, isVip: !!client.isVip};
   },
