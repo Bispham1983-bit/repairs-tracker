@@ -190,6 +190,7 @@
     .pill-listed    { background: #1e1a3a; color: var(--accent); }
     .pill-sold      { background: #1a2e1a; color: var(--green); }
     .pill-scrapped  { background: #2a1a1a; color: var(--red); }
+    .pill-tester    { background: #0c2233; color: #38bdf8; }
     .pill-unknown   { background: #1e293b; color: var(--muted); }
 
     #empty-list {
@@ -252,6 +253,7 @@
     .btn-red     { background: #b91c1c; color: #fff; }
     .btn-outline { background: none; border: 1px solid var(--border); color: var(--subtle); }
     .btn-outline:hover { color: var(--text); }
+    .btn-tester  { background: #0369a1; color: #fff; }
 
     /* Tabs */
     #detail-tabs {
@@ -630,6 +632,14 @@
     <div class="stat-value green" id="s-ready">—</div>
   </div>
   <div class="stat">
+    <div class="stat-label">Listed</div>
+    <div class="stat-value" style="color:#7c6ff7" id="s-listed">—</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Test Units</div>
+    <div class="stat-value" style="color:#38bdf8" id="s-tester">—</div>
+  </div>
+  <div class="stat">
     <div class="stat-label">Sold</div>
     <div class="stat-value" id="s-sold">—</div>
   </div>
@@ -649,6 +659,7 @@
   <button class="filter-btn" data-status="Listed">Listed</button>
   <button class="filter-btn" data-status="Sold">Sold</button>
   <button class="filter-btn" data-status="Scrapped">Scrapped</button>
+  <button class="filter-btn" data-status="Test Unit">Test Unit</button>
 </div>
 
 <!-- ── Main ────────────────────────────────────────────── -->
@@ -709,6 +720,7 @@
               <option>Listed</option>
               <option>Sold</option>
               <option>Scrapped</option>
+              <option>Test Unit</option>
             </select>
           </div>
           <div class="field">
@@ -1082,6 +1094,10 @@
           <option>Diagnosis</option>
           <option>In Repair</option>
           <option>Ready to Sell</option>
+          <option>Listed</option>
+          <option>Sold</option>
+          <option>Scrapped</option>
+          <option>Test Unit</option>
         </select>
       </div>
     </div>
@@ -1403,7 +1419,9 @@ function updateStats() {
   const wip = ['Intake','Diagnosis','In Repair'];
   document.getElementById('s-total').textContent  = items.length;
   document.getElementById('s-wip').textContent    = items.filter(i => wip.includes(i.status)).length;
-  document.getElementById('s-ready').textContent  = items.filter(i => i.status === 'Ready to Sell' || i.status === 'Listed').length;
+  document.getElementById('s-ready').textContent  = items.filter(i => i.status === 'Ready to Sell').length;
+  document.getElementById('s-listed').textContent = items.filter(i => i.status === 'Listed').length;
+  document.getElementById('s-tester').textContent = items.filter(i => i.status === 'Test Unit').length;
   document.getElementById('s-sold').textContent   = items.filter(i => i.status === 'Sold').length;
   const profit = items.filter(i => i.status === 'Sold').reduce((s, i) => s + (i.netProfit || 0), 0);
   document.getElementById('s-profit').textContent = '£' + profit.toFixed(2);
@@ -1413,7 +1431,7 @@ function updateStats() {
 const STATUS_CLASS = {
   'Intake': 'pill-intake', 'Diagnosis': 'pill-diagnosis', 'In Repair': 'pill-repair',
   'Ready to Sell': 'pill-ready', 'Listed': 'pill-listed', 'Sold': 'pill-sold',
-  'Scrapped': 'pill-scrapped',
+  'Scrapped': 'pill-scrapped', 'Test Unit': 'pill-tester',
 };
 
 function pillClass(status) { return STATUS_CLASS[status] || 'pill-unknown'; }
@@ -1541,11 +1559,14 @@ function renderActionBar(item) {
   if (s === 'Diagnosis')     btns.push(['Start Repair', 'btn-blue', () => quickStatus('In Repair')]);
   if (s === 'In Repair')     btns.push(['Mark Ready', 'btn-green', () => quickStatus('Ready to Sell')]);
   if (s === 'Ready to Sell') btns.push(['Mark Listed', 'btn-purple', () => quickStatus('Listed')]);
-  if (s !== 'Sold' && s !== 'Scrapped') {
+  if (s !== 'Sold' && s !== 'Scrapped' && s !== 'Test Unit') {
     btns.push(['Sold', 'btn-green', () => openSoldModal()]);
   }
-  if (s !== 'Scrapped' && s !== 'Sold') {
+  if (s !== 'Scrapped' && s !== 'Sold' && s !== 'Test Unit') {
     btns.push(['Scrapped', 'btn-red', () => quickStatus('Scrapped')]);
+  }
+  if (s !== 'Sold' && s !== 'Test Unit') {
+    btns.push(['Test Unit', 'btn-tester', () => quickStatus('Test Unit')]);
   }
   btns.push(['Delete', 'btn-outline', () => openConfirmDelete()]);
 
