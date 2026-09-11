@@ -1928,7 +1928,10 @@ document.getElementById('search-box').addEventListener('input', e => {
           <span style="font-weight:600;color:var(--muted);font-size:0.85rem">Total</span>
           <span id="invoice-total" style="font-size:1.15rem;font-weight:700;color:var(--green)">£0.00</span>
         </div>
-        <button onclick="saveInvoiceLines()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 14px;border-radius:6px;cursor:pointer;font-size:0.82rem">💾 Save Invoice</button>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button onclick="saveInvoiceLines()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 14px;border-radius:6px;cursor:pointer;font-size:0.82rem">💾 Save Invoice</button>
+          <span id="invoice-save-indicator" style="font-size:0.75rem;color:var(--green)"></span>
+        </div>
       </div>
 
       <!-- Save bar -->
@@ -2966,27 +2969,39 @@ function renderInvoiceLines() {
   container.innerHTML = '';
   invoiceLines.forEach(function(line, i) {
     const row = document.createElement('div');
-    row.style.cssText = 'display:grid;grid-template-columns:1fr 90px 32px;gap:6px;margin-bottom:6px;align-items:center';
+    row.style.cssText = 'display:grid;grid-template-columns:76px 1fr 90px 28px;gap:5px;margin-bottom:6px;align-items:center';
+    const isParts = (line.type || 'labour') === 'parts';
     row.innerHTML = `
-      <input value="${line.desc.replace(/"/g,'&quot;')}" placeholder="Description" onchange="invoiceLines[${i}].desc=this.value;updateInvoiceTotal()"
+      <button onclick="invoiceLines[${i}].type=invoiceLines[${i}].type==='parts'?'labour':'parts';renderInvoiceLines();autoSaveInvoice()"
+        style="border:1px solid ${isParts?'#3b82f6':'var(--border)'};background:${isParts?'rgba(59,130,246,0.15)':'var(--surface2)'};color:${isParts?'#60a5fa':'var(--muted)'};border-radius:5px;padding:4px 0;cursor:pointer;font-size:0.72rem;font-weight:600;text-align:center;white-space:nowrap">
+        ${isParts ? '🔩 Parts' : '🔧 Labour'}
+      </button>
+      <input value="${(line.desc||'').replace(/"/g,'&quot;')}" placeholder="Description" onchange="invoiceLines[${i}].desc=this.value;autoSaveInvoice()"
         style="background:var(--hover);border:1px solid var(--border);border-radius:5px;padding:5px 8px;color:var(--text);font-size:0.83rem">
-      <input type="number" value="${line.amount}" min="0" step="0.01" placeholder="0.00" onchange="invoiceLines[${i}].amount=parseFloat(this.value)||0;updateInvoiceTotal()"
+      <input type="number" value="${line.amount||''}" min="0" step="0.01" placeholder="0.00" onchange="invoiceLines[${i}].amount=parseFloat(this.value)||0;updateInvoiceTotal();autoSaveInvoice()"
         style="background:var(--hover);border:1px solid var(--border);border-radius:5px;padding:5px 6px;color:var(--text);font-size:0.83rem;text-align:right">
-      <button onclick="invoiceLines.splice(${i},1);renderInvoiceLines()" style="background:transparent;border:none;color:var(--red,#ef4444);cursor:pointer;font-size:1rem;padding:0">✕</button>`;
+      <button onclick="invoiceLines.splice(${i},1);renderInvoiceLines();autoSaveInvoice()" style="background:transparent;border:none;color:#ef4444;cursor:pointer;font-size:1rem;padding:0">✕</button>`;
     container.appendChild(row);
   });
   updateInvoiceTotal();
 }
 
 function updateInvoiceTotal() {
-  const total = invoiceLines.reduce(function(s, l) { return s + (parseFloat(l.amount) || 0); }, 0);
+  const partsTotal  = invoiceLines.filter(l => (l.type||'labour')==='parts').reduce((s,l) => s+(parseFloat(l.amount)||0), 0);
+  const labourTotal = invoiceLines.filter(l => (l.type||'labour')==='labour').reduce((s,l) => s+(parseFloat(l.amount)||0), 0);
+  const total = partsTotal + labourTotal;
   const el = document.getElementById('invoice-total');
-  if (el) el.textContent = '£' + total.toFixed(2);
+  if (el) {
+    el.innerHTML = (partsTotal > 0 && labourTotal > 0)
+      ? '<span style="font-size:0.75rem;color:var(--muted);font-weight:400">Labour £' + labourTotal.toFixed(2) + ' + Parts £' + partsTotal.toFixed(2) + ' = </span>£' + total.toFixed(2)
+      : '£' + total.toFixed(2);
+  }
 }
 
-function addInvoiceLine(desc, amount) {
-  invoiceLines.push({ desc: desc || '', amount: parseFloat(amount) || 0 });
+function addInvoiceLine(desc, amount, type) {
+  invoiceLines.push({ desc: desc || '', amount: parseFloat(amount) || 0, type: type || 'labour' });
   renderInvoiceLines();
+  autoSaveInvoice();
 }
 
 function loadInvoiceForJob(job) {
@@ -2995,16 +3010,41 @@ function loadInvoiceForJob(job) {
   if (!invoiceLines.length) {
     const labour = parseFloat(job.quotedPrice) || 0;
     const parts  = parseFloat(job.partsCost)   || 0;
-    if (labour) invoiceLines.push({ desc: 'Labour', amount: labour });
-    if (parts)  invoiceLines.push({ desc: 'Parts',  amount: parts  });
+    if (labour) invoiceLines.push({ desc: 'Labour', amount: labour, type: 'labour' });
+    if (parts)  invoiceLines.push({ desc: 'Parts',  amount: parts,  type: 'parts'  });
   }
+  // Ensure all lines have a type (migrate old data)
+  invoiceLines = invoiceLines.map(function(l) {
+    if (l.type) return l;
+    const lc = (l.desc||'').toLowerCase();
+    return { ...l, type: (lc.includes('part') || lc.includes('component') || lc.includes('stick') || lc.includes('hall')) ? 'parts' : 'labour' };
+  });
   renderInvoiceLines();
 }
 
-async function saveInvoiceLines() {
+let _invoiceSaveTimer = null;
+function autoSaveInvoice() {
+  clearTimeout(_invoiceSaveTimer);
+  _invoiceSaveTimer = setTimeout(function() { saveInvoiceLines(true); }, 900);
+}
+
+async function saveInvoiceLines(silent) {
   if (!selectedJobId) return;
+  // Sum parts lines and sync to job's partsCost
+  const partsTotal = invoiceLines.filter(l => (l.type||'labour')==='parts').reduce((s,l) => s+(parseFloat(l.amount)||0), 0);
   await api('PUT', '/api/jobs/' + selectedJobId + '/invoice', { items: invoiceLines });
-  showToast('Invoice saved');
+  // Update partsCost on the job to match parts lines
+  const updated = await api('PUT', '/api/jobs/' + selectedJobId, { partsCost: partsTotal });
+  const idx = jobs.findIndex(j => j.id === selectedJobId);
+  if (idx >= 0) jobs[idx] = { ...jobs[idx], partsCost: partsTotal };
+  // Reflect in the parts cost field
+  const partsEl = document.querySelector('#job-detail [data-jfield="partsCost"]');
+  if (partsEl) partsEl.value = partsTotal > 0 ? partsTotal.toFixed(2) : '';
+  if (!silent) showToast('Invoice saved');
+  else {
+    const ind = document.getElementById('invoice-save-indicator');
+    if (ind) { ind.textContent = 'Saved'; setTimeout(function(){ ind.textContent = ''; }, 1500); }
+  }
 }
 
 function printInvoice() {
@@ -3019,9 +3059,14 @@ function printInvoice() {
   const addr = client && client.address ? client.address.replace(/\n/g,'<br>') : '';
   const fullName = client ? [client.firstName, client.lastName].filter(Boolean).join(' ') || client.name : customerName;
 
-  const rows = invoiceLines.map(function(l) {
-    return `<tr><td>${l.desc}</td><td class="amt">£${(parseFloat(l.amount)||0).toFixed(2)}</td></tr>`;
-  }).join('');
+  const labour = invoiceLines.filter(l => (l.type||'labour')==='labour');
+  const parts  = invoiceLines.filter(l => (l.type||'labour')==='parts');
+  function rowGroup(label, lines) {
+    if (!lines.length) return '';
+    return `<tr><td colspan="2" style="padding:8px 0 2px;font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:600">${label}</td></tr>`
+      + lines.map(l => `<tr><td>${l.desc}</td><td class="amt">£${(parseFloat(l.amount)||0).toFixed(2)}</td></tr>`).join('');
+  }
+  const rows = rowGroup('Labour', labour) + rowGroup('Parts & Components', parts);
 
   const win = window.open('', '_blank');
   win.document.write(`<!DOCTYPE html>
