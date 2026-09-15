@@ -87,6 +87,7 @@ db.exec(`
 
 // Add new columns to existing DBs safely
 try { db.exec("ALTER TABLE items ADD COLUMN recommendedVenue TEXT DEFAULT ''"); } catch(e) {}
+try { db.exec("ALTER TABLE items ADD COLUMN giftedTo TEXT DEFAULT ''"); } catch(e) {}
 
 // Initialise counter
 if (!db.prepare("SELECT value FROM meta WHERE key='nextNum'").get()) {
@@ -306,7 +307,6 @@ module.exports = {
 
 // Add partsData column to items if not present
 try { db.prepare("ALTER TABLE items ADD COLUMN partsData TEXT DEFAULT '[]'").run(); } catch(e) {}
-try { db.prepare("ALTER TABLE items ADD COLUMN giftedTo TEXT DEFAULT ''").run(); } catch(e) {}
 
 // Add new columns if they don't exist yet (safe on existing DBs)
 ['dateReceived','datePostedBack','paymentMethod'].forEach(col => {
