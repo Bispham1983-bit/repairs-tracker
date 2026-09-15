@@ -117,7 +117,7 @@ const ITEM_COLS = [
   'faultDesc','repairNotes','hoursSpent','buyPrice','postageIn','partsCost',
   'estSalePrice','estProfit','saleVenue','listedEbay','listedVinted',
   'listedFacebook','listedCEX','listedOther','recommendedVenue','ebayItemNum','saleDate',
-  'salePrice','feesPost','netProfit','margin','partsData',
+  'salePrice','feesPost','netProfit','margin','partsData','giftedTo',
 ];
 
 const INSERT_STMT = db.prepare(`
@@ -306,6 +306,7 @@ module.exports = {
 
 // Add partsData column to items if not present
 try { db.prepare("ALTER TABLE items ADD COLUMN partsData TEXT DEFAULT '[]'").run(); } catch(e) {}
+try { db.prepare("ALTER TABLE items ADD COLUMN giftedTo TEXT DEFAULT ''").run(); } catch(e) {}
 
 // Add new columns if they don't exist yet (safe on existing DBs)
 ['dateReceived','datePostedBack','paymentMethod'].forEach(col => {

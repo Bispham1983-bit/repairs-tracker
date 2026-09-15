@@ -873,8 +873,13 @@
               <option>CEX</option>
               <option>Vinted</option>
               <option>Facebook</option>
+              <option>Gift</option>
               <option>Other</option>
             </select>
+          </div>
+          <div class="field">
+            <label>Gifted To</label>
+            <input type="text" data-field="giftedTo" placeholder="Recipient name">
           </div>
           <div class="field">
             <label>eBay Item #</label>
@@ -1133,8 +1138,13 @@
           <option>CEX</option>
           <option>Vinted</option>
           <option>Facebook</option>
+          <option>Gift</option>
           <option>Other</option>
         </select>
+      </div>
+      <div class="field" id="gift-recipient-wrap" style="display:none">
+        <label>Gifted To</label>
+        <input type="text" id="sold-gifted-to" placeholder="Recipient name (optional)">
       </div>
     </div>
     <div class="modal-actions">
@@ -1812,22 +1822,48 @@ document.getElementById('add-confirm').addEventListener('click', async () => {
 
 // ── Sold modal ────────────────────────────────────────────
 function openSoldModal() {
-  document.getElementById('sold-date').value  = new Date().toISOString().split('T')[0];
-  document.getElementById('sold-price').value = '';
-  document.getElementById('sold-fees').value  = '';
-  document.getElementById('sold-venue').value = '';
+  document.getElementById('sold-date').value            = new Date().toISOString().split('T')[0];
+  document.getElementById('sold-price').value           = '';
+  document.getElementById('sold-price').disabled        = false;
+  document.getElementById('sold-fees').value            = '';
+  document.getElementById('sold-venue').value           = '';
+  document.getElementById('sold-gifted-to').value       = '';
+  document.getElementById('gift-recipient-wrap').style.display = 'none';
+  document.getElementById('sold-confirm').textContent   = 'Mark Sold';
   openModal('sold-modal');
 }
 
 document.getElementById('sold-cancel').addEventListener('click', () => closeModal('sold-modal'));
 
+document.getElementById('sold-venue').addEventListener('change', function() {
+  const isGift   = this.value === 'Gift';
+  const priceEl  = document.getElementById('sold-price');
+  const feesEl   = document.getElementById('sold-fees');
+  document.getElementById('gift-recipient-wrap').style.display = isGift ? 'block' : 'none';
+  if (isGift) {
+    priceEl.value    = '0';
+    priceEl.disabled = true;
+    feesEl.value     = '0';
+    feesEl.disabled  = true;
+    document.getElementById('sold-confirm').textContent = 'Mark as Gifted';
+  } else {
+    priceEl.value    = '';
+    priceEl.disabled = false;
+    feesEl.value     = '';
+    feesEl.disabled  = false;
+    document.getElementById('sold-confirm').textContent = 'Mark Sold';
+  }
+});
+
 document.getElementById('sold-confirm').addEventListener('click', async () => {
-  const price = parseFloat(document.getElementById('sold-price').value);
-  if (!price) { alert('Sale price is required.'); return; }
+  const venue  = document.getElementById('sold-venue').value || '';
+  const isGift = venue === 'Gift';
+  const price  = isGift ? 0 : parseFloat(document.getElementById('sold-price').value);
+  if (!isGift && !price) { alert('Sale price is required.'); return; }
 
   const item = items.find(i => i.id === selectedId);
   const cost = (+item.buyPrice||0) + (+item.postageIn||0) + (+item.partsCost||0);
-  const fees = parseFloat(document.getElementById('sold-fees').value) || 0;
+  const fees = isGift ? 0 : (parseFloat(document.getElementById('sold-fees').value) || 0);
   const netProfit = price - fees - cost;
   const margin    = price ? (netProfit / price) * 100 : 0;
 
@@ -1836,7 +1872,8 @@ document.getElementById('sold-confirm').addEventListener('click', async () => {
     saleDate:  document.getElementById('sold-date').value,
     salePrice: price,
     feesPost:  fees,
-    saleVenue: document.getElementById('sold-venue').value || null,
+    saleVenue: venue || null,
+    giftedTo:  isGift ? (document.getElementById('sold-gifted-to').value.trim() || '') : '',
     netProfit: +netProfit.toFixed(2),
     margin:    +margin.toFixed(2),
   };
