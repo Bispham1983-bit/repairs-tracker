@@ -2009,11 +2009,11 @@ document.getElementById('search-box').addEventListener('input', e => {
         <div class="field mailin-only" style="display:none"><label>📦 Posted Back to Customer</label><input type="date" data-jfield="datePostedBack"></div>
       </div>
 
-      <!-- Warranty returns -->
+      <!-- Warranty repairs -->
       <div id="job-returns-section" style="margin-bottom:16px">
         <div class="field-section" style="display:flex;align-items:center;justify-content:space-between">
-          <span>↩ Warranty Returns</span>
-          <button onclick="openReturnForm()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 12px;border-radius:6px;cursor:pointer;font-size:0.8rem">+ Log return</button>
+          <span>🛡 Warranty Repairs</span>
+          <button onclick="openReturnForm()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 12px;border-radius:6px;cursor:pointer;font-size:0.8rem">+ Log warranty repair</button>
         </div>
         <div id="return-form" style="display:none;background:var(--hover);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px">
           <div class="field-grid two-col">
@@ -2024,7 +2024,7 @@ document.getElementById('search-box').addEventListener('input', e => {
           <label style="display:flex;align-items:center;gap:8px;margin:8px 0;cursor:pointer;font-size:0.85rem"><input type="checkbox" id="rf-restart" checked> Restart 3-month warranty from this date</label>
           <div style="font-size:0.75rem;color:var(--muted);margin-bottom:8px">Fitted any parts? Add them under Parts Used below — they'll come off this job's profit.</div>
           <div style="display:flex;gap:8px">
-            <button onclick="saveReturn()" style="background:var(--accent);border:none;color:#fff;padding:6px 16px;border-radius:6px;cursor:pointer;font-weight:600">Save return</button>
+            <button onclick="saveReturn()" style="background:var(--accent);border:none;color:#fff;padding:6px 16px;border-radius:6px;cursor:pointer;font-weight:600">Save warranty repair</button>
             <button onclick="document.getElementById('return-form').style.display='none'" style="background:transparent;border:1px solid var(--subtle);color:var(--muted);padding:6px 12px;border-radius:6px;cursor:pointer">Cancel</button>
           </div>
         </div>
@@ -2383,7 +2383,7 @@ function renderJobList() {
         <div class="job-row-name">${j.customerName || 'Unknown'}</div>
         <span class="status-pill ${jobPillClass(j.status)}" style="font-size:0.65rem">${j.status}</span>
       </div>
-      <div class="job-row-sub">#J${String(j.num).padStart(3,'0')} · ${j.device || '—'}${j.paid ? ' · <span style="color:var(--green)">Paid</span>' : ''}${jobReturns(j).length ? ' · <span style="color:#f59e0b">↩ Returned' + (jobReturns(j).length > 1 ? ' ×' + jobReturns(j).length : '') + '</span>' : ''}</div>
+      <div class="job-row-sub">#J${String(j.num).padStart(3,'0')} · ${j.device || '—'}${j.paid ? ' · <span style="color:var(--green)">Paid</span>' : ''}${jobReturns(j).length ? ' · <span style="color:#60a5fa">🛡 Warranty fix' + (jobReturns(j).length > 1 ? ' ×' + jobReturns(j).length : '') + '</span>' : ''}</div>
       ${j.faults ? `<div class="job-row-sub" style="margin-top:2px">${j.faults}</div>` : ''}
     </div>
   `).join('');
@@ -3329,11 +3329,11 @@ function renderReturns(job) {
   const box = document.getElementById('returns-list');
   if (!box) return;
   const list = jobReturns(job);
-  if (!list.length) { box.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;padding:2px 0">None — this job hasn\'t come back.</div>'; return; }
+  if (!list.length) { box.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;padding:2px 0">None — no warranty repairs on this job.</div>'; return; }
   box.innerHTML = list.map((r, i) => `
-    <div style="display:grid;grid-template-columns:1fr 28px;gap:6px;background:var(--hover);border:1px solid var(--border);border-left:3px solid #f59e0b;border-radius:6px;padding:8px 10px;margin-bottom:6px">
+    <div style="display:grid;grid-template-columns:1fr 28px;gap:6px;background:var(--hover);border:1px solid var(--border);border-left:3px solid #60a5fa;border-radius:6px;padding:8px 10px;margin-bottom:6px">
       <div>
-        <div style="font-size:0.82rem;font-weight:600">${fmtDateUK(r.date)} · ${escAttr(r.reported || 'Returned')}${r.warrantyRestarted ? ' <span style="color:var(--green);font-weight:400;font-size:0.75rem">· warranty restarted</span>' : ''}</div>
+        <div style="font-size:0.82rem;font-weight:600">${fmtDateUK(r.date)} · ${escAttr(r.reported || 'Warranty repair')}${r.warrantyRestarted ? ' <span style="color:var(--green);font-weight:400;font-size:0.75rem">· warranty restarted</span>' : ''}</div>
         ${r.workDone ? `<div style="font-size:0.8rem;color:var(--muted);margin-top:2px">${escAttr(r.workDone)}</div>` : ''}
       </div>
       <button onclick="deleteReturn(${i})" title="Remove" style="background:transparent;border:none;color:#ef4444;cursor:pointer;font-size:1rem;padding:0;align-self:start">✕</button>
@@ -3374,8 +3374,8 @@ async function saveReturn() {
     renderReturns(updated);
     updateWarrantyStatus();
     renderJobList();
-    showToast('Return logged' + (restart ? ' — warranty to ' + fmtDateUK(payload.warrantyExpires) : ''));
-  } catch(e) { alert('Could not save return: ' + e.message); }
+    showToast('Warranty repair logged' + (restart ? ' — warranty to ' + fmtDateUK(payload.warrantyExpires) : ''));
+  } catch(e) { alert('Could not save warranty repair: ' + e.message); }
 }
 
 async function deleteReturn(i) {
@@ -3388,7 +3388,7 @@ async function deleteReturn(i) {
     mergeJob(updated);
     renderReturns(updated);
     renderJobList();
-  } catch(e) { alert('Could not remove return: ' + e.message); }
+  } catch(e) { alert('Could not remove warranty repair: ' + e.message); }
 }
 
 // ── Parts Used (internal job cost) ───────────────────────
