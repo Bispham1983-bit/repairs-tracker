@@ -2011,8 +2011,8 @@ document.getElementById('search-box').addEventListener('input', e => {
 
       <div class="field-section">Pricing</div>
       <div class="field-grid two-col" style="margin-bottom:8px">
-        <div class="field"><label>Quoted Price (£)</label><input type="number" data-jfield="quotedPrice" min="0" step="0.01"></div>
-        <div class="field"><label>Parts Cost (£)</label><input type="number" data-jfield="partsCost" min="0" step="0.01"></div>
+        <div class="field"><label>Price Charged (£) <span id="jd-price-hint" style="font-size:0.75rem;font-weight:400"></span></label><input type="number" data-jfield="quotedPrice" min="0" step="0.01"></div>
+        <div class="field"><label>Parts Cost (£) <span style="color:var(--muted);font-size:0.75rem;font-weight:400">from Parts Used</span></label><input type="number" data-jfield="partsCost" min="0" step="0.01" readonly tabindex="-1" style="opacity:0.6;cursor:default"></div>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:var(--hover);border:1px solid var(--border);border-radius:8px;padding:8px 14px;user-select:none">
@@ -2031,11 +2031,27 @@ document.getElementById('search-box').addEventListener('input', e => {
         <div style="margin-left:auto;text-align:right">
           <div style="font-size:0.75rem;color:var(--muted)">Job Profit</div>
           <div id="jd-profit" style="font-size:1.3rem;font-weight:700">—</div>
+          <div id="jd-profit-breakdown" style="font-size:0.72rem;color:var(--muted);margin-top:2px"></div>
         </div>
       </div>
 
 
 
+
+      <!-- Parts used (internal cost — never printed on the invoice) -->
+      <div id="job-parts-section" style="margin-bottom:16px">
+        <div class="field-section" style="display:flex;align-items:center;justify-content:space-between">
+          <span>🔩 Parts Used <span style="color:var(--muted);font-size:0.72rem;font-weight:400;text-transform:none;letter-spacing:0">your cost · not shown on invoice</span></span>
+          <span id="parts-used-save-indicator" style="font-size:0.75rem;color:var(--green)"></span>
+        </div>
+        <div id="parts-used-presets" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+        <div id="parts-used-lines" style="margin-bottom:6px"></div>
+        <button onclick="addPartUsed()" style="background:transparent;border:1px dashed var(--border);color:var(--muted);padding:5px 12px;border-radius:6px;cursor:pointer;font-size:0.82rem;width:100%;margin-bottom:6px">+ Add part</button>
+        <div style="display:flex;justify-content:flex-end;align-items:center;gap:12px;padding:6px 0;border-top:1px solid var(--border)">
+          <span style="font-weight:600;color:var(--muted);font-size:0.85rem">Parts total</span>
+          <span id="parts-used-total" style="font-size:1.05rem;font-weight:700;color:var(--red)">£0.00</span>
+        </div>
+      </div>
 
       <!-- Invoice section -->
       <div id="job-invoice-section" style="margin-bottom:16px">
@@ -2049,6 +2065,7 @@ document.getElementById('search-box').addEventListener('input', e => {
           <span style="font-weight:600;color:var(--muted);font-size:0.85rem">Total</span>
           <span id="invoice-total" style="font-size:1.15rem;font-weight:700;color:var(--green)">£0.00</span>
         </div>
+        <div id="invoice-mismatch" style="display:none;font-size:0.78rem;color:#f59e0b;margin:2px 0 8px;text-align:right"></div>
         <div style="display:flex;align-items:center;gap:10px">
           <button onclick="saveInvoiceLines()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 14px;border-radius:6px;cursor:pointer;font-size:0.82rem">💾 Save Invoice</button>
           <span id="invoice-save-indicator" style="font-size:0.75rem;color:var(--green)"></span>
@@ -2145,15 +2162,15 @@ document.getElementById('search-box').addEventListener('input', e => {
 
     <div class="field-section" style="margin-top:12px">Select Faults</div>
     <div id="nj-fault-area" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
-      <label class="fault-chip nj-fault"><input type="checkbox" value="Left stick drift" data-price="first" data-parts="1.00"><span>Left stick drift</span></label>
-      <label class="fault-chip nj-fault"><input type="checkbox" value="Right stick drift" data-price="add" data-parts="1.00"><span>Right stick drift</span></label>
-      <label class="fault-chip nj-fault"><input type="checkbox" value="Left stick needs replacing" data-price="first" data-parts="1.00"><span>Left stick replacing</span></label>
-      <label class="fault-chip nj-fault"><input type="checkbox" value="Right stick needs replacing" data-price="add" data-parts="1.00"><span>Right stick replacing</span></label>
-      <label class="fault-chip nj-fault"><input type="checkbox" value="TMR upgrade (both sticks)" data-price="hall" data-parts="5.50"><span>⚡ TMR upgrade</span></label>
+      <label class="fault-chip nj-fault"><input type="checkbox" value="Left stick drift" data-price="first" data-parts="1.00" data-partname="Stick module (left)"><span>Left stick drift</span></label>
+      <label class="fault-chip nj-fault"><input type="checkbox" value="Right stick drift" data-price="add" data-parts="1.00" data-partname="Stick module (right)"><span>Right stick drift</span></label>
+      <label class="fault-chip nj-fault"><input type="checkbox" value="Left stick needs replacing" data-price="first" data-parts="1.00" data-partname="Stick module (left)"><span>Left stick replacing</span></label>
+      <label class="fault-chip nj-fault"><input type="checkbox" value="Right stick needs replacing" data-price="add" data-parts="1.00" data-partname="Stick module (right)"><span>Right stick replacing</span></label>
+      <label class="fault-chip nj-fault"><input type="checkbox" value="TMR upgrade (both sticks)" data-price="hall" data-parts="5.50" data-partname="TMR sticks (pair)"><span>⚡ TMR upgrade</span></label>
       <label class="fault-chip nj-fault"><input type="checkbox" value="LT not working" data-price="first"><span>LT not working</span></label>
       <label class="fault-chip nj-fault"><input type="checkbox" value="RT not working" data-price="add"><span>RT not working</span></label>
-      <label class="fault-chip nj-fault"><input type="checkbox" value="LB not working" data-price="add" data-parts="1.00"><span>LB not working</span></label>
-      <label class="fault-chip nj-fault"><input type="checkbox" value="RB not working" data-price="add" data-parts="1.00"><span>RB not working</span></label>
+      <label class="fault-chip nj-fault"><input type="checkbox" value="LB not working" data-price="add" data-parts="1.00" data-partname="Bumper button (LB)"><span>LB not working</span></label>
+      <label class="fault-chip nj-fault"><input type="checkbox" value="RB not working" data-price="add" data-parts="1.00" data-partname="Bumper button (RB)"><span>RB not working</span></label>
       <label class="fault-chip nj-fault"><input type="checkbox" value="A button not working" data-price="first"><span>A button</span></label>
       <label class="fault-chip nj-fault"><input type="checkbox" value="B button not working" data-price="add"><span>B button</span></label>
       <label class="fault-chip nj-fault"><input type="checkbox" value="X button not working" data-price="add"><span>X button</span></label>
@@ -2170,10 +2187,10 @@ document.getElementById('search-box').addEventListener('input', e => {
 
     <div style="margin-top:8px">
       <div class="field">
-        <label>Quoted Price (£) <span id="nj-price-hint" style="color:var(--accent);font-size:0.8rem"></span></label>
+        <label>Price Charged (£) <span id="nj-price-hint" style="color:var(--accent);font-size:0.8rem"></span></label>
         <input type="number" id="nj-quoted" min="0" step="0.01" placeholder="0.00" style="max-width:180px">
       </div>
-      <div class="field" style="margin-top:8px"><label>Est. Parts Cost (£) <span style="color:var(--muted);font-size:0.8rem">auto-filled</span></label><input type="number" id="nj-parts" min="0" step="0.01" placeholder="0.00" style="max-width:180px"></div>
+      <div class="field" style="margin-top:8px"><label>Parts Cost (£) <span style="color:var(--muted);font-size:0.8rem">auto-filled from faults · edit parts on the job</span></label><input type="number" id="nj-parts" min="0" step="0.01" placeholder="0.00" style="max-width:180px"></div>
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-top:10px;background:var(--hover);border:1px solid var(--border);border-radius:8px;padding:10px 14px;user-select:none">
         <input type="checkbox" id="nj-mailin" style="width:17px;height:17px;flex-shrink:0">
         <span>📬 Mail-in job — customer posting to me, I post back (+£3.95)</span>
@@ -2393,8 +2410,10 @@ function renderJobDetail() {
     else el.value = val ?? '';
   });
 
-  // Load invoice lines
+  // Load parts used + invoice lines
+  loadPartsUsedForJob(job);
   loadInvoiceForJob(job);
+  updatePriceHint();
 
   // Action bar
   const bar = document.getElementById('job-action-bar');
@@ -2596,14 +2615,66 @@ function mergeJob(updated) {
   if (i >= 0) jobs[i] = updated; else jobs.push(updated);
 }
 
+function jobFeeRate(method) {
+  return method === 'Card' ? 0.0175 : method === 'SumUp' ? 0.0169 : 0;
+}
+
 function updateJobProfit(item) {
   const el = document.getElementById('jd-profit');
+  const bd = document.getElementById('jd-profit-breakdown');
   const q = +(item.quotedPrice || 0);
   const p = +(item.partsCost  || 0);
-  if (!q && !p) { el.textContent = '—'; el.style.color = ''; return; }
-  const profit = q - p;
-  el.textContent = (profit >= 0 ? '+' : '') + '£' + profit.toFixed(2);
+  const fee = q * jobFeeRate(item.paymentMethod);
+  if (!q && !p) { el.textContent = '—'; el.style.color = ''; if (bd) bd.textContent = ''; return; }
+  const profit = q - p - fee;
+  el.textContent = (profit >= 0 ? '+' : '-') + '£' + Math.abs(profit).toFixed(2);
   el.style.color = profit >= 0 ? 'var(--green)' : 'var(--red)';
+  if (bd) bd.textContent = '£' + q.toFixed(2) + ' − £' + p.toFixed(2) + ' parts' + (fee ? ' − £' + fee.toFixed(2) + ' fee' : '');
+}
+
+// Current values for the open job, including unsaved edits
+function currentJob() {
+  const job = jobs.find(j => j.id === selectedJobId) || {};
+  return { ...job, ...jobPendingChanges };
+}
+
+// Standard (fixed) price for a job, worked out from its fault list
+function standardPriceFor(faultsStr, mailIn) {
+  const faults = (faultsStr || '').split(',').map(f => f.trim()).filter(Boolean);
+  const chips = [...document.querySelectorAll('#nj-fault-area input[type=checkbox]')];
+  const types = faults.map(f => { const c = chips.find(cb => cb.value === f); return c ? { value: f, price: c.dataset.price } : null; }).filter(Boolean);
+  let total = 0;
+  if (types.some(t => t.price === 'hall')) {
+    total += HALL_PRICE;
+    types.forEach(t => { if (t.price !== 'hall' && t.value !== 'Left stick drift' && t.value !== 'Right stick drift') total += ADD_PRICE; });
+  } else {
+    types.forEach((t, i) => { total += i === 0 ? FIRST_PRICE : ADD_PRICE; });
+  }
+  if (total && mailIn) total += MAILIN_PRICE;
+  return Math.round(total * 100) / 100;
+}
+
+function updatePriceHint() {
+  const el = document.getElementById('jd-price-hint');
+  if (!el) return;
+  const job = currentJob();
+  const std = standardPriceFor(job.faults, job.mailIn);
+  const price = +(job.quotedPrice || 0);
+  if (!std) { el.innerHTML = ''; return; }
+  if (Math.abs(price - std) < 0.005) {
+    el.innerHTML = '<span style="color:var(--muted)">standard price</span>';
+  } else {
+    el.innerHTML = '<span style="color:#f59e0b">custom</span> <span style="color:var(--muted)">· standard £' + std.toFixed(2) + '</span> '
+      + '<a href="#" onclick="setJobPrice(' + std + ');return false" style="color:var(--accent)">use</a>';
+  }
+}
+
+// Set the price field as if typed (marks the job as having unsaved changes)
+function setJobPrice(v) {
+  const el = document.querySelector('#job-detail [data-jfield="quotedPrice"]');
+  if (!el) return;
+  el.value = (+v).toFixed(2);
+  el.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
 function showJobSaveBar() { document.getElementById('job-save-bar').classList.remove('hidden'); }
@@ -2626,6 +2697,8 @@ document.getElementById('job-detail').addEventListener('change', e => {
   // Live profit preview
   const item = { ...jobs.find(j => j.id === selectedJobId), ...jobPendingChanges };
   updateJobProfit(item);
+  updatePriceHint();
+  updateInvoiceTotal();
 });
 
 document.getElementById('job-btn-save').addEventListener('click', async () => {
@@ -2715,13 +2788,22 @@ document.getElementById('nj-fault-area').addEventListener('change', e => {
 });
 document.getElementById('nj-mailin').addEventListener('change', calcJobPrice);
 
+// Parts the ticked faults will use (TMR pair replaces the single stick modules)
+function newJobPartsFromFaults() {
+  var checked = [...document.querySelectorAll('#nj-fault-area input[type=checkbox]:checked')];
+  var hasHall = checked.some(function(cb) { return cb.dataset.price === 'hall'; });
+  return checked.filter(function(cb) {
+    if (!cb.dataset.parts) return false;
+    if (hasHall && (cb.value === 'Left stick drift' || cb.value === 'Right stick drift')) return false;
+    return true;
+  }).map(function(cb) { return { desc: cb.dataset.partname || cb.value, cost: parseFloat(cb.dataset.parts) || 0 }; });
+}
+
 function calcJobParts() {
-  var total = 0;
-  document.querySelectorAll('#nj-fault-area input[type=checkbox]:checked').forEach(function(cb) {
-    total += parseFloat(cb.dataset.parts || 0);
-  });
+  var total = newJobPartsFromFaults().reduce(function(t, p) { return t + p.cost; }, 0);
   document.getElementById('nj-parts').value = total > 0 ? total.toFixed(2) : '';
 }
+document.getElementById('nj-fault-area').addEventListener('change', calcJobParts);
 
 var pnlCurrentTab = 'monthly';
 function pnlSetTab(tab) {
@@ -2890,6 +2972,14 @@ document.getElementById('nj-confirm').addEventListener('click', async () => {
     faultNotes:      document.getElementById('nj-fault-notes').value.trim(),
     quotedPrice:     parseFloat(document.getElementById('nj-quoted').value) || 0,
     partsCost:       parseFloat(document.getElementById('nj-parts').value) || 0,
+    partsUsed:       (function() {
+      var list  = newJobPartsFromFaults();
+      var sum   = list.reduce(function(t, p) { return t + p.cost; }, 0);
+      var typed = parseFloat(document.getElementById('nj-parts').value) || 0;
+      // If the parts figure was typed over, keep it as one line rather than lose it
+      if (Math.abs(typed - sum) > 0.005) return typed ? [{ desc: 'Parts', cost: typed }] : [];
+      return list;
+    })(),
     mailIn:          document.getElementById('nj-mailin').checked,
     status:          document.getElementById('nj-mailin').checked ? 'Awaiting Item' : 'Checked In',
   };
@@ -3166,6 +3256,93 @@ async function saveItemParts(silent) {
   }
 }
 
+// ── Parts Used (internal job cost) ───────────────────────
+// Quick-add buttons — edit names/costs here to match what you pay
+const PART_PRESETS = [
+  { desc: 'Stick module',      cost: 1.00 },
+  { desc: 'TMR sticks (pair)', cost: 5.50 },
+  { desc: 'TMR stick (single)', cost: 2.75 },
+  { desc: 'Bumper button',     cost: 1.00 },
+];
+let partsUsed = [];
+let _partsUsedSaveTimer = null;
+
+function escAttr(v) { return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+function loadPartsUsedForJob(job) {
+  try { partsUsed = JSON.parse(job.partsUsed || '[]'); } catch(e) { partsUsed = []; }
+  // Older jobs only have a single parts figure — show it as one line
+  if (!partsUsed.length && +job.partsCost > 0) partsUsed = [{ desc: 'Parts', cost: +job.partsCost }];
+  renderPartsUsed();
+}
+
+function partsUsedTotal() {
+  return Math.round(partsUsed.reduce((t, p) => t + (parseFloat(p.cost) || 0), 0) * 100) / 100;
+}
+
+function renderPartsUsed() {
+  const pre = document.getElementById('parts-used-presets');
+  if (pre) {
+    pre.innerHTML = PART_PRESETS.map((p, i) =>
+      `<button onclick="addPartUsed(PART_PRESETS[${i}].desc, PART_PRESETS[${i}].cost)" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:14px;padding:3px 10px;cursor:pointer;font-size:0.75rem">+ ${escAttr(p.desc)} <span style="color:var(--muted)">£${p.cost.toFixed(2)}</span></button>`
+    ).join('');
+  }
+  const box = document.getElementById('parts-used-lines');
+  if (!box) return;
+  box.innerHTML = '';
+  if (!partsUsed.length) {
+    box.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;padding:4px 0">No parts logged — add what you fitted, including any free upgrades.</div>';
+  }
+  partsUsed.forEach(function(line, i) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:grid;grid-template-columns:1fr 90px 28px;gap:5px;margin-bottom:6px;align-items:center';
+    row.innerHTML = `
+      <input value="${escAttr(line.desc)}" placeholder="Part (e.g. TMR sticks – free upgrade)" onchange="partsUsed[${i}].desc=this.value;autoSavePartsUsed()"
+        style="background:var(--hover);border:1px solid var(--border);border-radius:5px;padding:5px 8px;color:var(--text);font-size:0.83rem">
+      <input type="number" value="${line.cost ? (+line.cost).toFixed(2) : (line.desc ? '0.00' : '')}" min="0" step="0.01" placeholder="0.00" onchange="partsUsed[${i}].cost=parseFloat(this.value)||0;updatePartsUsedTotal();autoSavePartsUsed()"
+        style="background:var(--hover);border:1px solid var(--border);border-radius:5px;padding:5px 6px;color:var(--text);font-size:0.83rem;text-align:right">
+      <button onclick="partsUsed.splice(${i},1);renderPartsUsed();autoSavePartsUsed()" style="background:transparent;border:none;color:#ef4444;cursor:pointer;font-size:1rem;padding:0">✕</button>`;
+    box.appendChild(row);
+  });
+  updatePartsUsedTotal();
+}
+
+function updatePartsUsedTotal() {
+  const total = partsUsedTotal();
+  const el = document.getElementById('parts-used-total');
+  if (el) el.textContent = '£' + total.toFixed(2);
+  // Live-update the parts cost field and profit before the save lands
+  const pc = document.querySelector('#job-detail [data-jfield="partsCost"]');
+  if (pc) pc.value = total ? total.toFixed(2) : '';
+  if (selectedJobId) updateJobProfit({ ...currentJob(), partsCost: total });
+}
+
+function addPartUsed(desc, cost) {
+  partsUsed.push({ desc: desc || '', cost: parseFloat(cost) || 0 });
+  renderPartsUsed();
+  if (desc) autoSavePartsUsed();
+  else { const inputs = document.querySelectorAll('#parts-used-lines input:not([type=number])'); if (inputs.length) inputs[inputs.length - 1].focus(); }
+}
+
+function autoSavePartsUsed() {
+  clearTimeout(_partsUsedSaveTimer);
+  _partsUsedSaveTimer = setTimeout(savePartsUsed, 700);
+}
+
+async function savePartsUsed() {
+  if (!selectedJobId) return;
+  const jobId = selectedJobId;
+  try {
+    const updated = await api('PUT', '/api/jobs/' + jobId, { partsUsed: partsUsed });
+    mergeJob(updated);
+    if (selectedJobId !== jobId) return;
+    updatePartsUsedTotal();
+    renderJobList();
+    const ind = document.getElementById('parts-used-save-indicator');
+    if (ind) { ind.textContent = 'Saved ✓'; clearTimeout(ind._t); ind._t = setTimeout(() => { ind.textContent = ''; }, 1500); }
+  } catch(e) { alert('Could not save parts: ' + e.message); }
+}
+
 let invoiceLines = [];
 
 function renderInvoiceLines() {
@@ -3201,6 +3378,16 @@ function updateInvoiceTotal() {
       ? '<span style="font-size:0.75rem;color:var(--muted);font-weight:400">Labour £' + labourTotal.toFixed(2) + ' + Parts £' + partsTotal.toFixed(2) + ' = </span>£' + total.toFixed(2)
       : '£' + total.toFixed(2);
   }
+  // Warn when the invoice doesn't add up to the price charged
+  const mm = document.getElementById('invoice-mismatch');
+  if (mm && selectedJobId) {
+    const price = +(currentJob().quotedPrice || 0);
+    if (invoiceLines.length && Math.abs(total - price) > 0.005) {
+      mm.style.display = '';
+      mm.innerHTML = '⚠ Invoice total £' + total.toFixed(2) + ' ≠ price charged £' + price.toFixed(2)
+        + ' · <a href="#" onclick="setJobPrice(' + total.toFixed(2) + ');return false" style="color:var(--accent)">set price to £' + total.toFixed(2) + '</a>';
+    } else { mm.style.display = 'none'; mm.innerHTML = ''; }
+  }
 }
 
 function addInvoiceLine(desc, amount, type) {
@@ -3213,10 +3400,9 @@ function loadInvoiceForJob(job) {
   try { invoiceLines = JSON.parse(job.invoiceData || '[]'); } catch(e) { invoiceLines = []; }
   // Pre-populate if empty
   if (!invoiceLines.length) {
-    const labour = parseFloat(job.quotedPrice) || 0;
-    const parts  = parseFloat(job.partsCost)   || 0;
-    if (labour) invoiceLines.push({ desc: 'Labour', amount: labour, type: 'labour' });
-    if (parts)  invoiceLines.push({ desc: 'Parts',  amount: parts,  type: 'parts'  });
+    // Start from the price charged — your parts cost is internal and stays off the invoice
+    const price = parseFloat(job.quotedPrice) || 0;
+    if (price) invoiceLines.push({ desc: job.faults ? 'Repair: ' + job.faults : 'Repair', amount: price, type: 'labour' });
   }
   // Ensure all lines have a type (migrate old data)
   invoiceLines = invoiceLines.map(function(l) {
@@ -3235,16 +3421,10 @@ function autoSaveInvoice() {
 
 async function saveInvoiceLines(silent) {
   if (!selectedJobId) return;
-  // Sum parts lines and sync to job's partsCost
-  const partsTotal = invoiceLines.filter(l => (l.type||'labour')==='parts').reduce((s,l) => s+(parseFloat(l.amount)||0), 0);
-  await api('PUT', '/api/jobs/' + selectedJobId + '/invoice', { items: invoiceLines });
-  // Update partsCost on the job to match parts lines
-  const updated = await api('PUT', '/api/jobs/' + selectedJobId, { partsCost: partsTotal });
+  // Invoice lines are customer-facing only — they no longer change your parts cost
+  const saved = await api('PUT', '/api/jobs/' + selectedJobId + '/invoice', { items: invoiceLines });
   const idx = jobs.findIndex(j => j.id === selectedJobId);
-  if (idx >= 0) jobs[idx] = { ...jobs[idx], partsCost: partsTotal };
-  // Reflect in the parts cost field
-  const partsEl = document.querySelector('#job-detail [data-jfield="partsCost"]');
-  if (partsEl) partsEl.value = partsTotal > 0 ? partsTotal.toFixed(2) : '';
+  if (idx >= 0 && saved) jobs[idx] = { ...jobs[idx], invoiceData: saved.invoiceData };
   if (!silent) showToast('Invoice saved');
   else {
     const ind = document.getElementById('invoice-save-indicator');

@@ -172,6 +172,17 @@ module.exports = {
   },
 
   // ── Jobs ──────────────────────────────────────────────────
+  // Parts actually fitted to a job (internal cost, never shown on the invoice).
+  // Accepts an array of {desc, cost}; returns JSON + total cost.
+  _normaliseParts(list) {
+    const arr = (Array.isArray(list) ? list : []).map(p => ({
+      desc: String((p && p.desc) || '').trim(),
+      cost: Math.round((parseFloat(p && p.cost) || 0) * 100) / 100,
+    }));
+    const total = Math.round(arr.reduce((t, p) => t + p.cost, 0) * 100) / 100;
+    return { json: JSON.stringify(arr), total };
+  },
+
   getAllJobs() {
     return db.prepare('SELECT * FROM jobs ORDER BY num ASC').all().map(j => ({...j, paid: !!j.paid, mailIn: !!j.mailIn}));
   },
@@ -204,9 +215,15 @@ module.exports = {
       paymentMethod:   data.paymentMethod   || null,
       notes:           data.notes           || '',
       clientId:        data.clientId        || null,
+      partsUsed:       '[]',
     };
-    db.prepare(`INSERT INTO jobs (id,num,dateIn,customerName,customerContact,device,faults,faultNotes,quotedPrice,partsCost,mailIn,status,paid,paymentMethod,dateCompleted,warrantyExpires,dateReceived,datePostedBack,notes,clientId)
-      VALUES (@id,@num,@dateIn,@customerName,@customerContact,@device,@faults,@faultNotes,@quotedPrice,@partsCost,@mailIn,@status,@paid,@paymentMethod,@dateCompleted,@warrantyExpires,@dateReceived,@datePostedBack,@notes,@clientId)`).run(row);
+    if (Array.isArray(data.partsUsed)) {
+      const n = this._normaliseParts(data.partsUsed);
+      row.partsUsed = n.json;
+      row.partsCost = n.total;
+    }
+    db.prepare(`INSERT INTO jobs (id,num,dateIn,customerName,customerContact,device,faults,faultNotes,quotedPrice,partsCost,mailIn,status,paid,paymentMethod,dateCompleted,warrantyExpires,dateReceived,datePostedBack,notes,clientId,partsUsed)
+      VALUES (@id,@num,@dateIn,@customerName,@customerContact,@device,@faults,@faultNotes,@quotedPrice,@partsCost,@mailIn,@status,@paid,@paymentMethod,@dateCompleted,@warrantyExpires,@dateReceived,@datePostedBack,@notes,@clientId,@partsUsed)`).run(row);
     return this.getJob(id);
   },
 
@@ -214,6 +231,11 @@ module.exports = {
     const allowed = ['dateIn','customerName','customerContact','device','faults','faultNotes','quotedPrice','partsCost','mailIn','status','paid','paymentMethod','dateCompleted','warrantyExpires','dateReceived','datePostedBack','notes','clientId'];
     const row = {};
     for (const k of allowed) { if (k in data) row[k] = (k === 'paid' || k === 'mailIn') ? (data[k] ? 1 : 0) : data[k]; }
+    if (Array.isArray(data.partsUsed)) {
+      const n = this._normaliseParts(data.partsUsed);
+      row.partsUsed = n.json;
+      row.partsCost = n.total;   // parts list is the source of truth for cost
+    }
     if (!Object.keys(row).length) return this.getJob(id);
     const sql = 'UPDATE jobs SET ' + Object.keys(row).map(k => k+'=@'+k).join(',') + ", updatedAt=datetime('now') WHERE id=@id";
     db.prepare(sql).run({...row, id});
@@ -315,6 +337,7 @@ try { db.prepare("ALTER TABLE items ADD COLUMN partsData TEXT DEFAULT '[]'").run
 });
 try { db.prepare('ALTER TABLE jobs ADD COLUMN clientId TEXT').run(); } catch(e) {}
 try { db.prepare("ALTER TABLE jobs ADD COLUMN invoiceData TEXT DEFAULT '[]'").run(); } catch(e) {}
+try { db.prepare("ALTER TABLE jobs ADD COLUMN partsUsed TEXT DEFAULT '[]'").run(); } catch(e) {}
 ['firstName','lastName','address'].forEach(col => {
   try { db.prepare('ALTER TABLE clients ADD COLUMN ' + col + " TEXT DEFAULT ''").run(); } catch(e) {}
 });
