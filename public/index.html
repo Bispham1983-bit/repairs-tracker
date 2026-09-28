@@ -2642,7 +2642,14 @@ function currentJob() {
 function standardPriceFor(faultsStr, mailIn) {
   const faults = (faultsStr || '').split(',').map(f => f.trim()).filter(Boolean);
   const chips = [...document.querySelectorAll('#nj-fault-area input[type=checkbox]')];
-  const types = faults.map(f => { const c = chips.find(cb => cb.value === f); return c ? { value: f, price: c.dataset.price } : null; }).filter(Boolean);
+  const types = faults.map(f => {
+    // Older jobs used "Hall effect upgrade" before it was renamed to TMR
+    if (/hall effect|tmr/i.test(f)) return { value: f, price: 'hall' };
+    const c = chips.find(cb => cb.value === f);
+    return c ? { value: f, price: c.dataset.price } : null;
+  });
+  // A fault we don't recognise means we can't work out a trustworthy standard price
+  if (types.some(t => !t)) return 0;
   let total = 0;
   if (types.some(t => t.price === 'hall')) {
     total += HALL_PRICE;
