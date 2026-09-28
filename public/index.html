@@ -2004,9 +2004,31 @@ document.getElementById('search-box').addEventListener('input', e => {
         <div class="field span-all"><label>Fault Notes</label><textarea data-jfield="faultNotes" rows="2" placeholder="Extra details…"></textarea></div>
         <div class="field span-all"><label>Repair Notes</label><textarea data-jfield="notes" rows="2" placeholder="What was done, parts used…"></textarea></div>
         <div class="field"><label>Date Completed</label><input type="date" data-jfield="dateCompleted"></div>
-        <div class="field"><label>Warranty Expires</label><input type="date" data-jfield="warrantyExpires" readonly style="opacity:0.6"></div>
+        <div class="field"><label>Warranty Expires <span id="jd-warranty-status" style="font-size:0.75rem;font-weight:400"></span></label><input type="date" data-jfield="warrantyExpires" readonly style="opacity:0.6"></div>
         <div class="field mailin-only" style="display:none"><label>📬 Item Received at Shop</label><input type="date" data-jfield="dateReceived"></div>
         <div class="field mailin-only" style="display:none"><label>📦 Posted Back to Customer</label><input type="date" data-jfield="datePostedBack"></div>
+      </div>
+
+      <!-- Warranty returns -->
+      <div id="job-returns-section" style="margin-bottom:16px">
+        <div class="field-section" style="display:flex;align-items:center;justify-content:space-between">
+          <span>↩ Warranty Returns</span>
+          <button onclick="openReturnForm()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 12px;border-radius:6px;cursor:pointer;font-size:0.8rem">+ Log return</button>
+        </div>
+        <div id="return-form" style="display:none;background:var(--hover);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px">
+          <div class="field-grid two-col">
+            <div class="field"><label>Date brought back</label><input type="date" id="rf-date"></div>
+            <div class="field"><label>What they reported</label><input type="text" id="rf-reported" placeholder="e.g. Stick drift again"></div>
+            <div class="field span-all"><label>What you did</label><textarea id="rf-work" rows="2" placeholder="e.g. No fault found — reflowed joints, recalibrated"></textarea></div>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;margin:8px 0;cursor:pointer;font-size:0.85rem"><input type="checkbox" id="rf-restart" checked> Restart 3-month warranty from this date</label>
+          <div style="font-size:0.75rem;color:var(--muted);margin-bottom:8px">Fitted any parts? Add them under Parts Used below — they'll come off this job's profit.</div>
+          <div style="display:flex;gap:8px">
+            <button onclick="saveReturn()" style="background:var(--accent);border:none;color:#fff;padding:6px 16px;border-radius:6px;cursor:pointer;font-weight:600">Save return</button>
+            <button onclick="document.getElementById('return-form').style.display='none'" style="background:transparent;border:1px solid var(--subtle);color:var(--muted);padding:6px 12px;border-radius:6px;cursor:pointer">Cancel</button>
+          </div>
+        </div>
+        <div id="returns-list"></div>
       </div>
 
       <div class="field-section">Pricing</div>
@@ -2361,7 +2383,7 @@ function renderJobList() {
         <div class="job-row-name">${j.customerName || 'Unknown'}</div>
         <span class="status-pill ${jobPillClass(j.status)}" style="font-size:0.65rem">${j.status}</span>
       </div>
-      <div class="job-row-sub">#J${String(j.num).padStart(3,'0')} · ${j.device || '—'}${j.paid ? ' · <span style="color:var(--green)">Paid</span>' : ''}</div>
+      <div class="job-row-sub">#J${String(j.num).padStart(3,'0')} · ${j.device || '—'}${j.paid ? ' · <span style="color:var(--green)">Paid</span>' : ''}${jobReturns(j).length ? ' · <span style="color:#f59e0b">↩ Returned' + (jobReturns(j).length > 1 ? ' ×' + jobReturns(j).length : '') + '</span>' : ''}</div>
       ${j.faults ? `<div class="job-row-sub" style="margin-top:2px">${j.faults}</div>` : ''}
     </div>
   `).join('');
@@ -2411,6 +2433,8 @@ function renderJobDetail() {
   });
 
   // Load parts used + invoice lines
+  renderReturns(job);
+  updateWarrantyStatus();
   loadPartsUsedForJob(job);
   loadInvoiceForJob(job);
   updatePriceHint();
@@ -2706,6 +2730,7 @@ document.getElementById('job-detail').addEventListener('change', e => {
   updateJobProfit(item);
   updatePriceHint();
   updateInvoiceTotal();
+  updateWarrantyStatus();
 });
 
 document.getElementById('job-btn-save').addEventListener('click', async () => {
@@ -3261,6 +3286,109 @@ async function saveItemParts(silent) {
   } else {
     showToast('Parts saved');
   }
+}
+
+// Small confirmation message, bottom-centre
+function showToast(msg) {
+  let t = document.getElementById('app-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'app-toast';
+    t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:8px 16px;border-radius:8px;font-size:0.85rem;z-index:10000;box-shadow:0 4px 16px rgba(0,0,0,0.4);transition:opacity 0.3s;pointer-events:none';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._h);
+  t._h = setTimeout(() => { t.style.opacity = '0'; }, 2200);
+}
+
+// ── Warranty returns ─────────────────────────────────────
+function jobReturns(job) {
+  try { return JSON.parse((job && job.warrantyReturns) || '[]') || []; } catch(e) { return []; }
+}
+
+function fmtDateUK(d) {
+  if (!d) return '—';
+  const [y, m, day] = d.split('-');
+  return day + '/' + m + '/' + y;
+}
+
+function updateWarrantyStatus() {
+  const el = document.getElementById('jd-warranty-status');
+  if (!el) return;
+  const exp = currentJob().warrantyExpires;
+  if (!exp) { el.textContent = ''; return; }
+  const today = new Date().toISOString().slice(0, 10);
+  const days = Math.round((new Date(exp) - new Date(today)) / 86400000);
+  if (days >= 0) { el.style.color = 'var(--green)'; el.textContent = '· active, ' + days + ' day' + (days === 1 ? '' : 's') + ' left'; }
+  else { el.style.color = 'var(--muted)'; el.textContent = '· expired'; }
+}
+
+function renderReturns(job) {
+  const box = document.getElementById('returns-list');
+  if (!box) return;
+  const list = jobReturns(job);
+  if (!list.length) { box.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;padding:2px 0">None — this job hasn\'t come back.</div>'; return; }
+  box.innerHTML = list.map((r, i) => `
+    <div style="display:grid;grid-template-columns:1fr 28px;gap:6px;background:var(--hover);border:1px solid var(--border);border-left:3px solid #f59e0b;border-radius:6px;padding:8px 10px;margin-bottom:6px">
+      <div>
+        <div style="font-size:0.82rem;font-weight:600">${fmtDateUK(r.date)} · ${escAttr(r.reported || 'Returned')}${r.warrantyRestarted ? ' <span style="color:var(--green);font-weight:400;font-size:0.75rem">· warranty restarted</span>' : ''}</div>
+        ${r.workDone ? `<div style="font-size:0.8rem;color:var(--muted);margin-top:2px">${escAttr(r.workDone)}</div>` : ''}
+      </div>
+      <button onclick="deleteReturn(${i})" title="Remove" style="background:transparent;border:none;color:#ef4444;cursor:pointer;font-size:1rem;padding:0;align-self:start">✕</button>
+    </div>`).join('');
+}
+
+function openReturnForm() {
+  document.getElementById('rf-date').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('rf-reported').value = '';
+  document.getElementById('rf-work').value = '';
+  document.getElementById('rf-restart').checked = true;
+  document.getElementById('return-form').style.display = '';
+  document.getElementById('rf-reported').focus();
+}
+
+async function saveReturn() {
+  if (!selectedJobId) return;
+  const job = jobs.find(j => j.id === selectedJobId);
+  const date = document.getElementById('rf-date').value || new Date().toISOString().slice(0, 10);
+  const restart = document.getElementById('rf-restart').checked;
+  const entry = {
+    date,
+    reported: document.getElementById('rf-reported').value.trim(),
+    workDone: document.getElementById('rf-work').value.trim(),
+    warrantyRestarted: restart,
+  };
+  const payload = { warrantyReturns: [...jobReturns(job), entry] };
+  if (restart) {
+    const d = new Date(date); d.setMonth(d.getMonth() + 3);
+    payload.warrantyExpires = d.toISOString().slice(0, 10);
+  }
+  try {
+    const updated = await api('PUT', '/api/jobs/' + selectedJobId, payload);
+    mergeJob(updated);
+    document.getElementById('return-form').style.display = 'none';
+    const wf = document.querySelector('#job-detail [data-jfield="warrantyExpires"]');
+    if (wf && updated.warrantyExpires) wf.value = updated.warrantyExpires;
+    renderReturns(updated);
+    updateWarrantyStatus();
+    renderJobList();
+    showToast('Return logged' + (restart ? ' — warranty to ' + fmtDateUK(payload.warrantyExpires) : ''));
+  } catch(e) { alert('Could not save return: ' + e.message); }
+}
+
+async function deleteReturn(i) {
+  if (!selectedJobId) return;
+  const job = jobs.find(j => j.id === selectedJobId);
+  const list = jobReturns(job);
+  list.splice(i, 1);
+  try {
+    const updated = await api('PUT', '/api/jobs/' + selectedJobId, { warrantyReturns: list });
+    mergeJob(updated);
+    renderReturns(updated);
+    renderJobList();
+  } catch(e) { alert('Could not remove return: ' + e.message); }
 }
 
 // ── Parts Used (internal job cost) ───────────────────────

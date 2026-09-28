@@ -236,6 +236,14 @@ module.exports = {
       row.partsUsed = n.json;
       row.partsCost = n.total;   // parts list is the source of truth for cost
     }
+    if (Array.isArray(data.warrantyReturns)) {
+      row.warrantyReturns = JSON.stringify(data.warrantyReturns.map(r => ({
+        date:     String((r && r.date) || '').slice(0, 10),
+        reported: String((r && r.reported) || '').trim(),
+        workDone: String((r && r.workDone) || '').trim(),
+        warrantyRestarted: !!(r && r.warrantyRestarted),
+      })));
+    }
     if (!Object.keys(row).length) return this.getJob(id);
     const sql = 'UPDATE jobs SET ' + Object.keys(row).map(k => k+'=@'+k).join(',') + ", updatedAt=datetime('now') WHERE id=@id";
     db.prepare(sql).run({...row, id});
@@ -338,6 +346,7 @@ try { db.prepare("ALTER TABLE items ADD COLUMN partsData TEXT DEFAULT '[]'").run
 try { db.prepare('ALTER TABLE jobs ADD COLUMN clientId TEXT').run(); } catch(e) {}
 try { db.prepare("ALTER TABLE jobs ADD COLUMN invoiceData TEXT DEFAULT '[]'").run(); } catch(e) {}
 try { db.prepare("ALTER TABLE jobs ADD COLUMN partsUsed TEXT DEFAULT '[]'").run(); } catch(e) {}
+try { db.prepare("ALTER TABLE jobs ADD COLUMN warrantyReturns TEXT DEFAULT '[]'").run(); } catch(e) {}
 ['firstName','lastName','address'].forEach(col => {
   try { db.prepare('ALTER TABLE clients ADD COLUMN ' + col + " TEXT DEFAULT ''").run(); } catch(e) {}
 });
