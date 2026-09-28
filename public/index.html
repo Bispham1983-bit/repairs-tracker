@@ -2896,6 +2896,7 @@ document.getElementById('nj-confirm').addEventListener('click', async () => {
   try {
     const job = await api('POST', '/api/jobs', data);
     jobs.push(job);
+    loadClients().catch(function(){}); // new job may have created a client
     btn.disabled = false; btn.textContent = 'Create Job';
     closeModal('add-job-modal');
     renderJobList();
@@ -2927,7 +2928,7 @@ function switchView(view) {
   document.getElementById('btn-view-clients').classList.toggle('active', isClients);
   document.getElementById('btn-view-pnl').classList.toggle('active', isPnl);
   if (isJobs && !jobs.length) loadJobs();
-  if (isClients && !clients.length) loadClients();
+  if (isClients) loadClients(); // always refresh — jobs can create clients
   if (isPnl) { if (!jobs.length) loadJobs().then(renderCombinedPnl); else renderCombinedPnl(); }
 }
 

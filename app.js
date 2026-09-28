@@ -95,9 +95,11 @@ app.get('/api/jobs', (req, res) => {
   res.json(db.getAllJobs());
 });
 
-app.post('/api/jobs', (req, res) => {
-  const name    = (req.body.customerName || '').trim();
-  const contact = (req.body.customerContact || '').trim();
+// Find or create the client for a job's customer name/contact
+function clientForJob(body) {
+  const name    = (body.customerName || '').trim();
+  const contact = (body.customerContact || '').trim();
+  if (!name) return null;
   const parts   = name.split(/\s+/);
   const extra   = {
     firstName: parts[0] || '',
@@ -105,14 +107,29 @@ app.post('/api/jobs', (req, res) => {
     phone:     contact && !contact.includes('@') ? contact : '',
     email:     contact && contact.includes('@')  ? contact : '',
   };
-  const client = name ? db.getOrCreateClient(name, extra) : null;
-  const job = db.createJob({ ...req.body, clientId: client ? client.id : null });
-  res.json(job);
+  return db.getOrCreateClient(name, extra);
+}
+
+app.post('/api/jobs', (req, res) => {
+  try {
+    const client = clientForJob(req.body);
+    const job = db.createJob({ ...req.body, clientId: client ? client.id : null });
+    res.json(job);
+  } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 app.put('/api/jobs/:id', (req, res) => {
-  const job = db.updateJob(req.params.id, req.body);
-  res.json(job);
+  try {
+    const data = { ...req.body };
+    // If the customer name changes, re-link the job to the matching client
+    if ('customerName' in data) {
+      const existing = db.getJob(req.params.id);
+      const merged = { customerName: data.customerName, customerContact: 'customerContact' in data ? data.customerContact : (existing && existing.customerContact) };
+      const client = clientForJob(merged);
+      data.clientId = client ? client.id : null;
+    }
+    res.json(db.updateJob(req.params.id, data));
+  } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 app.delete('/api/jobs/:id', (req, res) => {
