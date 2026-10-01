@@ -4,6 +4,11 @@ const path = require('path');
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'repairs.db');
 const db = new Database(DB_PATH);
 
+// Normalise a name for matching: lower case, single spaces, trimmed
+function normName(n) { return String(n || '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+// SQL equivalent of normName for a column/expression (collapses double spaces too)
+const NORM_SQL = expr => `LOWER(TRIM(REPLACE(REPLACE(REPLACE(${expr}, '  ', ' '), '  ', ' '), '  ', ' ')))`;
+
 db.pragma('journal_mode = WAL');
 
 db.exec(`
@@ -276,10 +281,20 @@ module.exports = {
     return c ? {...c, isVip: !!c.isVip} : null;
   },
 
+  // Match a client by display name OR first+last name, ignoring case and extra spaces
+  findClientByName(name) {
+    const key = normName(name);
+    if (!key) return null;
+    const c = db.prepare(`SELECT * FROM clients
+      WHERE ${NORM_SQL('name')} = ? OR ${NORM_SQL("COALESCE(firstName,'') || ' ' || COALESCE(lastName,'')")} = ?
+      ORDER BY num ASC LIMIT 1`).get(key, key);
+    return c ? {...c, isVip: !!c.isVip} : null;
+  },
+
   getOrCreateClient(name, extra) {
     if (!name || !name.trim()) return null;
     extra = extra || {};
-    let client = db.prepare("SELECT * FROM clients WHERE name=?").get(name.trim());
+    let client = this.findClientByName(name);
     if (!client) {
       const num = db.prepare("SELECT COALESCE(MAX(num),0)+1 AS n FROM clients").get().n;
       const id  = 'client-' + String(num).padStart(3,'0');
@@ -319,6 +334,14 @@ module.exports = {
     const allowed = ['name','phone','email','notes','isVip','firstName','lastName','address'];
     const row = {};
     for (const k of allowed) { if (k in data) row[k] = k === 'isVip' ? (data[k] ? 1 : 0) : data[k]; }
+    // Keep the display name in step with first/last name so job matching finds this client
+    if (!('name' in data) && ('firstName' in data || 'lastName' in data)) {
+      const cur = db.prepare('SELECT firstName,lastName FROM clients WHERE id=?').get(id) || {};
+      const first = ('firstName' in data ? data.firstName : cur.firstName) || '';
+      const last  = ('lastName'  in data ? data.lastName  : cur.lastName)  || '';
+      const full  = [first.trim(), last.trim()].filter(Boolean).join(' ');
+      if (full) row.name = full;
+    }
     if (!Object.keys(row).length) return this.getClient(id);
     const sql = 'UPDATE clients SET ' + Object.keys(row).map(k => k+'=@'+k).join(',') + ", updatedAt=datetime('now') WHERE id=@id";
     db.prepare(sql).run({...row, id});
@@ -351,11 +374,44 @@ try { db.prepare("ALTER TABLE jobs ADD COLUMN warrantyReturns TEXT DEFAULT '[]'"
   try { db.prepare('ALTER TABLE clients ADD COLUMN ' + col + " TEXT DEFAULT ''").run(); } catch(e) {}
 });
 
+// Merge clients that were duplicated because a job's name didn't exactly match
+// (e.g. client "Jason" with last name added later, then a job for "Jason Smith").
+// The older client is kept; jobs and any missing details move across.
+(function mergeDuplicateClients() {
+  const all = db.prepare('SELECT * FROM clients ORDER BY num ASC').all();
+  const keysOf = c => new Set([normName(c.name), normName((c.firstName||'') + ' ' + (c.lastName||''))].filter(Boolean));
+  const kept = [];
+  const merge = db.transaction((keep, dupe) => {
+    db.prepare('UPDATE jobs SET clientId=? WHERE clientId=?').run(keep.id, dupe.id);
+    const fill = {};
+    for (const k of ['phone','email','address','notes','firstName','lastName']) {
+      if (!keep[k] && dupe[k]) { fill[k] = dupe[k]; keep[k] = dupe[k]; }
+    }
+    if (dupe.isVip && !keep.isVip) { fill.isVip = 1; keep.isVip = 1; }
+    const full = [(keep.firstName||'').trim(), (keep.lastName||'').trim()].filter(Boolean).join(' ');
+    if (full && full !== keep.name) { fill.name = full; keep.name = full; }
+    if (Object.keys(fill).length) {
+      db.prepare('UPDATE clients SET ' + Object.keys(fill).map(k => k+'=@'+k).join(',') + ", updatedAt=datetime('now') WHERE id=@id").run({...fill, id: keep.id});
+    }
+    db.prepare('DELETE FROM clients WHERE id=?').run(dupe.id);
+  });
+  for (const c of all) {
+    const ck = keysOf(c);
+    const keep = kept.find(o => [...keysOf(o)].some(k => ck.has(k)));
+    if (keep) { merge(keep, c); console.log('Merged duplicate client', c.id, '(' + c.name + ') into', keep.id); }
+    else kept.push(c);
+  }
+})();
+
+// Keep display names in step with first/last names
+db.prepare(`UPDATE clients SET name = TRIM(COALESCE(firstName,'') || ' ' || COALESCE(lastName,''))
+  WHERE COALESCE(firstName,'') != '' AND name != TRIM(COALESCE(firstName,'') || ' ' || COALESCE(lastName,''))`).run();
+
 // Back-link existing jobs to clients by customer name
 (function migrateClients() {
   const unlinked = db.prepare("SELECT DISTINCT customerName FROM jobs WHERE clientId IS NULL AND customerName != ''").all();
   for (const { customerName } of unlinked) {
-    let client = db.prepare("SELECT id FROM clients WHERE name = ?").get(customerName);
+    let client = module.exports.findClientByName(customerName);
     if (!client) {
       const num = (db.prepare("SELECT COALESCE(MAX(num),0)+1 AS n FROM clients").get().n);
       const id  = 'client-' + String(num).padStart(3,'0');

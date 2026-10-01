@@ -97,6 +97,11 @@ app.get('/api/jobs', (req, res) => {
 
 // Find or create the client for a job's customer name/contact
 function clientForJob(body) {
+  // Client picked from autofill — use it directly
+  if (body.clientId) {
+    const picked = db.getClient(body.clientId);
+    if (picked) return picked;
+  }
   const name    = (body.customerName || '').trim();
   const contact = (body.customerContact || '').trim();
   if (!name) return null;
@@ -122,10 +127,11 @@ app.put('/api/jobs/:id', (req, res) => {
   try {
     const data = { ...req.body };
     // If the customer name changes, re-link the job to the matching client
-    if ('customerName' in data) {
-      const existing = db.getJob(req.params.id);
+    const existing = db.getJob(req.params.id);
+    const nameChanged = 'customerName' in data && (!existing || (existing.customerName || '').trim() !== (data.customerName || '').trim());
+    if (data.clientId || nameChanged || (existing && !existing.clientId && 'customerName' in data)) {
       const merged = { customerName: data.customerName, customerContact: 'customerContact' in data ? data.customerContact : (existing && existing.customerContact) };
-      const client = clientForJob(merged);
+      const client = clientForJob({ ...merged, clientId: data.clientId });
       data.clientId = client ? client.id : null;
     }
     res.json(db.updateJob(req.params.id, data));

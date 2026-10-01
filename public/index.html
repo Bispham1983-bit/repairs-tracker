@@ -2178,6 +2178,7 @@ document.getElementById('search-box').addEventListener('input', e => {
       <div class="field"><label>Date In</label><input type="date" id="nj-datein"></div>
       <div class="field"><label>First Name</label><input type="text" id="nj-firstname" placeholder="First name" list="client-names-datalist" autocomplete="off"><datalist id="client-names-datalist"></datalist></div>
       <div class="field"><label>Last Name</label><input type="text" id="nj-lastname" placeholder="Last name"></div>
+      <div class="field span-all" id="nj-client-hint" style="margin-top:-6px;font-size:0.75rem;color:var(--muted);min-height:0"></div>
       <div class="field span-all"><label>Contact (phone / email)</label><input type="text" id="nj-contact" placeholder="07700… or email@…"></div>
       <div class="field span-all"><label>Device</label><input type="text" id="nj-device" list="device-list" placeholder="Select or type a device…" autocomplete="off"><datalist id="device-list"><option value="PS5 DualSense Controller"><option value="PS4 DualShock 4 Controller"><option value="Xbox Series X/S Controller"><option value="Xbox One Controller"><option value="Nintendo Switch Pro Controller"><option value="Nintendo Switch Joy-Con (Left)"><option value="Nintendo Switch Joy-Con (Right)"><option value="Nintendo Switch Joy-Con Pair"><option value="Xbox 360 Controller"><option value="PS3 DualShock 3 Controller"><option value="Nintendo Switch OLED"><option value="Nintendo Switch Lite"><option value="Nintendo Switch"><option value="PS5 Console"><option value="PS4 Console"><option value="PS4 Slim Console"><option value="Xbox Series X Console"><option value="Xbox Series S Console"><option value="Xbox One Console"><option value="Steam Deck"></datalist></div>
     </div>
@@ -2998,6 +2999,7 @@ document.getElementById('nj-confirm').addEventListener('click', async () => {
   const data = {
     dateIn:          document.getElementById('nj-datein').value,
     customerName:    name,
+    clientId:        njClientId,
     customerContact: document.getElementById('nj-contact').value.trim(),
     device:          document.getElementById('nj-device').value.trim(),
     faults,
@@ -3667,24 +3669,47 @@ function populateClientDatalist() {
   });
 }
 
+// Client the New Job form is linked to (set when the typed name matches an existing client)
+var njClientId = null;
+
+function njNorm(s) { return String(s || '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+function njClientFull(c) { return njNorm([c.firstName, c.lastName].filter(Boolean).join(' ') || c.name); }
+
+// Re-check which existing client (if any) the typed first + last name belongs to
+function njUpdateLinkedClient() {
+  var first = document.getElementById('nj-firstname').value;
+  var last  = document.getElementById('nj-lastname').value;
+  var full  = njNorm(first + ' ' + last);
+  var match = full ? clients.find(function(c) { return njClientFull(c) === full || njNorm(c.name) === full; }) : null;
+  njClientId = match ? match.id : null;
+  var hint = document.getElementById('nj-client-hint');
+  if (hint) hint.textContent = match ? '✓ Existing client' : (full ? 'New client will be created' : '');
+}
+
 function setupCustomerNameAutofill() {
+  njClientId = null;
+  var hint = document.getElementById('nj-client-hint');
+  if (hint) hint.textContent = '';
   var inp = document.getElementById('nj-firstname');
   if (!inp || inp._autofillReady) return;
   inp._autofillReady = true;
   inp.addEventListener('input', function() {
-    var val = this.value.trim();
-    // Try to match on first name alone or full name
-    var match = clients.find(function(c) {
-      return c.name.toLowerCase() === val.toLowerCase()
-          || (c.firstName||'').toLowerCase() === val.toLowerCase();
-    });
+    var val = njNorm(this.value);
+    // Match on full name, or on first name when only one client has it
+    var match = clients.find(function(c) { return njNorm(c.name) === val || njClientFull(c) === val; });
+    if (!match) {
+      var byFirst = clients.filter(function(c) { return njNorm(c.firstName || c.name.split(' ')[0]) === val; });
+      if (byFirst.length === 1) match = byFirst[0];
+    }
     if (match) {
       var lastInp = document.getElementById('nj-lastname');
       if (lastInp && !lastInp.value) lastInp.value = match.lastName || '';
       var contactInp = document.getElementById('nj-contact');
       if (contactInp && !contactInp.value) contactInp.value = match.phone || match.email || '';
     }
+    njUpdateLinkedClient();
   });
+  document.getElementById('nj-lastname').addEventListener('input', njUpdateLinkedClient);
 }
 
 async function loadClients() {
@@ -3769,7 +3794,9 @@ async function saveClientDetails() {
   });
   const idx = clients.findIndex(c => c.id === selectedClientId);
   if (idx >= 0) clients[idx] = updated;
+  document.getElementById('cd-name').textContent = updated.name;
   renderClientList();
+  populateClientDatalist();
 }
 
 async function toggleClientVip() {
